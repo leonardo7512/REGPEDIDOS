@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Registrar Pedido</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Header mejorado */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Login screen mejorado */
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        /* Form styles mejorados */
+        .form-content {
+            padding: 1rem;
+            padding-bottom: 100px; /* Espacio para botón flotante */
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group.highlight {
+            background: #f8f9ff;
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Botones mejorados */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        /* File upload mejorado */
+        .file-upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload-area.has-file {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            color: #cbd5e0;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        /* Preview mejorado */
+        .preview-container {
+            margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+
+        /* Fotos adicionales */
+        .photo-item {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .photo-item .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Botón flotante de envío */
+        .floating-submit {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        /* Status messages */
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 500;
+            text-align: center;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+
+        /* Responsive improvements */
+        @media (max-width: 480px) {
+            .form-content {
+                padding: 0.5rem;
+            }
+            
+            .login-card {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .container {
+                background: #1a1a1a;
+                color: #e0e0e0;
+            }
+            
+            input, select, textarea {
+                background: #2d2d2d;
+                border-color: #404040;
+                color: #e0e0e0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login View -->
+    <div id="loginView" class="login-container">
+        <div class="login-card">
+            <h2 class="login-title">🔐 Iniciar Sesión</h2>
+            <div class="form-group">
+                <label for="username">👤 Usuario</label>
+                <input type="text" id="username" placeholder="Ingresa tu usuario" required>
+            </div>
+            <div class="form-group">
+                <label for="password">🔑 Contraseña</label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+            </div>
+            <button id="loginButton" class="btn btn-primary mb-2">Ingresar</button>
+            <a href="#" class="btn btn-secondary">Volver al Selector</a>
+            <div id="loginStatus" class="status hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main Content View -->
+    <div id="contentView" class="hidden">
+        <div class="header">
+            <h1>📦 Registrar Pedido</h1>
+            <div class="header-controls">
+                <span id="welcomeMessage" class="user-info"></span>
+                <button id="logoutButton" class="btn-logout">Salir</button>
+            </div>
+        </div>
+
+        <div class="form-content">
+            <form id="uploadForm">
+                <!-- Información básica -->
+                <div class="form-group highlight">
+                    <h3 style="margin-bottom: 1rem; color: #667eea;">📋 Información del Pedido</h3>
+                    
+                    <div class="form-group">
+                        <label for="fechaPedido">📅 Fecha del Pedido</label>
+                        <input type="date" id="fechaPedido" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="origen">🏪 Origen</label>
+                        <select id="origen" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="FALAB">FALAB</option>
+                            <option value="ML">ML</option>
+                            <option value="WB">WB</option>
+                            <option value="NV">NV</option>
+                            <option value="RIPLEY">RIPLEY</option>
+                            <option value="DEVO">DEVO</option>
+                        </select>
+                    </div>
+
+                    <div id="nvRelatedGroup" class="form-group highlight hidden">
+                        <div class="form-group">
+                            <label for="vendedor">👨‍💼 Vendedor (Requerido para NV)</label>
+                            <input type="text" id="vendedor" placeholder="Nombre del vendedor">
+                        </div>
+                        <div class="form-group">
+                            <label for="relatedNvNumber">🔗 Número Nota Venta Relacionada</label>
+                            <input type="text" id="relatedNvNumber" placeholder="N° de la NV original">
+                            <small style="color: #666; font-size: 0.8rem;">Este número se usa para encontrar la NV y añadir los datos del pedido en la misma fila.</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nombreCliente">👤 Nombre del Cliente</label>
+                        <input type="text" id="nombreCliente" placeholder="Nombre completo del cliente" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="identifier">🆔 N° Identificación (Pedido)</label>
+                        <input type="text" id="identifier" placeholder="Número ID de este pedido" required>
+                        <small style="color: #666; font-size: 0.8rem;">Número ID de *este* Pedido.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="armadoPor">👷‍♂️ Armado por</label>
+                        <input type="text" id="armadoPor" placeholder="Nombre de quien armó el pedido" required>
+                    </div>
+                </div>
+
+                <!-- Información de despacho -->
+                <div class="form-group highlight">
+                    <h3 style="margin-bottom: 1rem; color: #667eea;">🚚 Información de Despacho</h3>
+                    
+                    <div class="form-group">
+                        <label for="tipoDespacho">📦 Tipo de Despacho</label>
+                        <select id="tipoDespacho" required>
+                            <option value="">-- Seleccione --</option>
+                            <option value="Retiro en Tienda">🏪 Retiro en Tienda</option>
+                            <option value="Envío a Domicilio">🏠 Envío a Domicilio</option>
+                        </select>
+                    </div>
+
+                    <div id="courierGroup" class="hidden">
+                        <div class="form-group">
+                            <label for="courier">🚛 Courier</label>
+                            <select id="courier">
+                                <option value="">-- Seleccione Courier --</option>
+                                <option value="STARKEN">STARKEN</option>
+                                <option value="BLUE">BLUE</option>
+                                <option value="TUTTO">TUTTO</option>
+                                <option value="PULLMAN">PULLMAN</option>
+                                <option value="VARMONT">VARMONT</option>
+                                <option value="CHILEXPRESS">CHILEXPRESS</option>
+                                <option value="TVP">TVP</option>
+                                <option value="CACEM">CACEM</option>
+                                <option value="MERCOSUR">MERCOSUR</option>
+                                <option value="CRUZ DEL SUR">CRUZ DEL SUR</option>
+                                <option value="CORREOS">CORREOS</option>
+                                <option value="Otros">Otros</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="courierOtro" class="hidden" placeholder="Ingrese nombre del courier">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numeroBultos">📦 Número de Bultos</label>
+                        <input type="number" id="numeroBultos" min="1" value="1" required>
+                    </div>
+                </div>
+
+                <!-- Descripción opcional -->
+                <div class="form-group">
+                    <label for="description">📝 Descripción (Opcional)</label>
+                    <textarea id="description" rows="3" placeholder="Descripción adicional del pedido..."></textarea>
+                </div>
+
+                <!-- Documento principal -->
+                <div class="form-group highlight">
+                    <h3 style="margin-bottom: 1rem; color: #667eea;">📄 Documento Principal</h3>
+                    <div class="file-upload-area" onclick="document.getElementById('nvDocumentInput').click()">
+                        <input type="file" id="nvDocumentInput" class="file-input" accept="image/*,application/pdf" required>
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Toca para seleccionar imagen o PDF</div>
+                    </div>
+                    <div id="nvDocumentPreview" class="preview-container hidden"></div>
+                    <button type="button" id="removeNvDocumentButton" class="btn btn-danger hidden" style="margin-top: 0.5rem;">Quitar Documento</button>
+                </div>
+
+                <!-- Fotos adicionales -->
+                <div class="form-group highlight">
+                    <h3 style="margin-bottom: 1rem; color: #667eea;">📸 Fotos Adicionales</h3>
+                    <p style="color: #666; margin-bottom: 1rem;">Máximo 10 fotos adicionales</p>
+                    <div id="additionalPhotosContainer">
+                        <p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>
+                    </div>
+                    <button type="button" id="addPhotoButton" class="btn btn-success">➕ Agregar Foto Adicional</button>
+                </div>
+            </form>
+
+            <div id="formStatus" class="status hidden"></div>
+        </div>
+
+        <!-- Botón flotante de envío -->
+        <div class="floating-submit">
+            <button type="submit" id="submitButtonPedido" class="btn btn-primary" form="uploadForm">
+                💾 Guardar Registro de Pedido
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let loggedInUser = null;
+        const MAX_ADDITIONAL_PHOTOS = 10;
+        
+        // Referencias a elementos
+        const loginView = document.getElementById('loginView');
+        const contentView = document.getElementById('contentView');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('loginButton');
+        const loginStatus = document.getElementById('loginStatus');
+        const logoutButton = document.getElementById('logoutButton');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const uploadForm = document.getElementById('uploadForm');
+        const origenSelect = document.getElementById('origen');
+        const nvRelatedGroup = document.getElementById('nvRelatedGroup');
+        const vendedorInput = document.getElementById('vendedor');
+        const relatedNvNumberInput = document.getElementById('relatedNvNumber');
+        const identifierInput = document.getElementById('identifier');
+        const descriptionInput = document.getElementById('description');
+        const armadoPorInput = document.getElementById('armadoPor');
+        const nvDocumentInput = document.getElementById('nvDocumentInput');
+        const nvDocumentPreview = document.getElementById('nvDocumentPreview');
+        const removeNvDocumentButton = document.getElementById('removeNvDocumentButton');
+        const additionalPhotosContainer = document.getElementById('additionalPhotosContainer');
+        const addPhotoButton = document.getElementById('addPhotoButton');
+        const submitButton = document.getElementById('submitButtonPedido');
+        const formStatus = document.getElementById('formStatus');
+        const fechaPedidoInput = document.getElementById('fechaPedido');
+        const nombreClienteInput = document.getElementById('nombreCliente');
+        const tipoDespachoSelect = document.getElementById('tipoDespacho');
+        const courierGroup = document.getElementById('courierGroup');
+        const courierSelect = document.getElementById('courier');
+        const courierOtroInput = document.getElementById('courierOtro');
+        const numeroBultosInput = document.getElementById('numeroBultos');
+
+        // Funciones de utilidad
+        function showStatus(element, message, isError = false, isLoading = false) {
+            if (!element) return;
+            element.textContent = message;
+            element.className = 'status';
+            if (isError) element.classList.add('error');
+            else if (isLoading) element.classList.add('loading');
+            else element.classList.add('success');
+            element.classList.remove('hidden');
+        }
+
+        function hideStatus(element) {
+            if (!element) return;
+            element.classList.add('hidden');
+            element.textContent = "";
+            element.className = 'status hidden';
+        }
+
+        function toggleSubmitButton(disabled) {
+            if (!submitButton) return;
+            submitButton.disabled = disabled;
+            submitButton.textContent = disabled ? '⏳ Procesando...' : '💾 Guardar Registro de Pedido';
+        }
+
+        function setInitialDate() {
+            const today = new Date();
+            fechaPedidoInput.value = today.toISOString().split('T')[0];
+        }
+
+        function resetFormVisuals() {
+            uploadForm.reset();
+            setInitialDate();
+            nvDocumentPreview.classList.add('hidden');
+            removeNvDocumentButton.classList.add('hidden');
+            additionalPhotosContainer.innerHTML = '<p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>';
+            addPhotoButton.disabled = false;
+            handleOrigenChange();
+            handleTipoDespachoChange();
+            hideStatus(formStatus);
+        }
+
+        // Manejo de archivos
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                if (!file || file.size === 0) {
+                    return reject(new Error(`Archivo "${file ? file.name : '?'}" vacío.`));
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (e.target?.readyState === FileReader.DONE && typeof e.target.result === 'string') {
+                        const base64String = e.target.result.split(',')[1];
+                        if (base64String) {
+                            resolve({ 
+                                fileName: file.name, 
+                                mimeType: file.type || 'application/octet-stream', 
+                                base64Data: base64String 
+                            });
+                        } else {
+                            reject(new Error(`Error al leer ${file.name} (resultado vacío)`));
+                        }
+                    } else {
+                        reject(new Error(`Error en la lectura de ${file.name}`));
+                    }
+                };
+                reader.onerror = (error) => reject(new Error(`Error al leer ${file.name}: ${error.message}`));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function previewFile(file, previewElement) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewElement.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    previewElement.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewElement.innerHTML = `<p style="text-align: center; color: #666;">📄 ${file.name}</p>`;
+                previewElement.classList.remove('hidden');
+            }
+        }
+
+        // Event listeners para login
+        if (loginButton) {
+            loginButton.addEventListener('click', handleLogin);
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+        }
+
+        function handleLogin() {
+            if (!usernameInput.value.trim() || !passwordInput.value) {
+                showStatus(loginStatus, 'Usuario y contraseña requeridos.', true);
+                return;
+            }
+            
+            showStatus(loginStatus, 'Verificando credenciales...', false, true);
+            loginButton.disabled = true;
+            
+            // Simulación de login (reemplazar con Google Apps Script)
+            setTimeout(() => {
+                // Aquí iría: google.script.run.withSuccessHandler(onLoginSuccess).withFailureHandler(onLoginFailure).checkLogin(usernameInput.value.trim(), passwordInput.value);
+                onLoginSuccess(true); // Simulación para demo
+            }, 1000);
+        }
+
+        function onLoginSuccess(loginResult) {
+            loginButton.disabled = false;
+            if (loginResult === true) {
+                loggedInUser = usernameInput.value.trim();
+                loginView.classList.add('hidden');
+                contentView.classList.remove('hidden');
+                hideStatus(loginStatus);
+                welcomeMessage.textContent = `👤 ${loggedInUser}`;
+                usernameInput.value = "";
+                passwordInput.value = "";
+                resetFormVisuals();
+            } else {
+                onLoginFailure({message: "Credenciales incorrectas."});
+            }
+        }
+
+        function onLoginFailure(error) {
+            loginButton.disabled = false;
+            showStatus(loginStatus, `Error: ${error.message || 'Desconocido'}.`, true);
+        }
+
+        // Logout
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                loggedInUser = null;
+                contentView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                resetFormVisuals();
+                hideStatus(formStatus);
+                hideStatus(loginStatus);
+            });
+        }
+
+        // Manejo de origen
+        if (origenSelect) {
+            origenSelect.addEventListener('change', handleOrigenChange);
+        }
+
+        function handleOrigenChange() {
+            const isNV = origenSelect.value === 'NV';
+            nvRelatedGroup.classList.toggle('hidden', !isNV);
+            vendedorInput.required = isNV;
+            relatedNvNumberInput.required = isNV;
+        }
+
+        // Manejo de tipo de despacho
+        if (tipoDespachoSelect) {
+            tipoDespachoSelect.addEventListener('change', handleTipoDespachoChange);
+        }
+
+        if (courierSelect) {
+            courierSelect.addEventListener('change', handleCourierChange);
+        }
+
+        function handleTipoDespachoChange() {
+            const isEnvio = tipoDespachoSelect.value === 'Envío a Domicilio';
+            courierGroup.classList.toggle('hidden', !isEnvio);
+            courierSelect.required = isEnvio;
+            if (!isEnvio) handleCourierChange();
+        }
+
+        function handleCourierChange() {
+            const isOtros = courierSelect.value === 'Otros';
+            courierOtroInput.classList.toggle('hidden', !isOtros);
+            courierOtroInput.required = isOtros;
+        }
+
+        // Manejo de documento principal
+        if (nvDocumentInput) {
+            nvDocumentInput.addEventListener('change', () => {
+                const file = nvDocumentInput.files[0];
+                if (file) {
+                    previewFile(file, nvDocumentPreview);
+                    removeNvDocumentButton.classList.remove('hidden');
+                    document.querySelector('.file-upload-area').classList.add('has-file');
+                } else {
+                    nvDocumentPreview.classList.add('hidden');
+                    removeNvDocumentButton.classList.add('hidden');
+                    document.querySelector('.file-upload-area').classList.remove('has-file');
+                }
+            });
+        }
+
+        if (removeNvDocumentButton) {
+            removeNvDocumentButton.addEventListener('click', () => {
+                nvDocumentInput.value = "";
+                nvDocumentInput.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        }
+
+        // Manejo de fotos adicionales
+        if (addPhotoButton) {
+            addPhotoButton.addEventListener('click', addPhotoInputRow);
+        }
+
+        function addPhotoInputRow() {
+            const currentCount = additionalPhotosContainer.querySelectorAll('.photo-item').length;
+            if (currentCount >= MAX_ADDITIONAL_PHOTOS) {
+                showStatus(formStatus, `Máximo ${MAX_ADDITIONAL_PHOTOS} fotos adicionales.`, true);
+                setTimeout(() => hideStatus(formStatus), 3000);
+                return;
+            }
+
+            if (currentCount === 0) {
+                additionalPhotosContainer.innerHTML = '';
+            }
+
+            const uniqueId = Date.now() + Math.random();
+            const photoNumber = currentCount + 1;
+
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `
+                <button type="button" class="remove-btn" onclick="removePhotoItem(this)">×</button>
+                <label for="additionalPhotoInput_${uniqueId}">📸 Foto Adicional ${photoNumber}</label>
+                <div class="file-upload-area" onclick="document.getElementById('additionalPhotoInput_${uniqueId}').click()">
+                    <input type="file" id="additionalPhotoInput_${uniqueId}" class="file-input additional-photo-input" accept="image/*" required>
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Toca para seleccionar imagen</div>
+                </div>
+                <div class="preview-container hidden"></div>
+            `;
+
+            additionalPhotosContainer.appendChild(photoItem);
+
+            // Configurar eventos para la nueva foto
+            const newInput = photoItem.querySelector('.additional-photo-input');
+            const newPreview = photoItem.querySelector('.preview-container');
+            const newUploadArea = photoItem.querySelector('.file-upload-area');
+
+            newInput.addEventListener('change', () => {
+                const file = newInput.files[0];
+                if (file) {
+                    previewFile(file, newPreview);
+                    newUploadArea.classList.add('has-file');
+                } else {
+                    newPreview.classList.add('hidden');
+                    newUploadArea.classList.remove('has-file');
+                }
+            });
+
+            addPhotoButton.disabled = (currentCount + 1) >= MAX_ADDITIONAL_PHOTOS;
+        }
+
+        // Función global para remover fotos
+        window.removePhotoItem = function(button) {
+            button.closest('.photo-item').remove();
+            renumberAdditionalPhotos();
+            const currentCount = additionalPhotosContainer.querySelectorAll('.photo-item').length;
+            addPhotoButton.disabled = currentCount >= MAX_ADDITIONAL_PHOTOS;
+            
+            if (currentCount === 0) {
+                additionalPhotosContainer.innerHTML = '<p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>';
+            }
+        };
+
+        function renumberAdditionalPhotos() {
+            additionalPhotosContainer.querySelectorAll('.photo-item label').forEach((label, index) => {
+                label.textContent = `📸 Foto Adicional ${index + 1}`;
+            });
+        }
+
+        // Manejo del formulario
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                if (!loggedInUser) {
+                    showStatus(formStatus, 'Error: Debe iniciar sesión.', true);
+                    return;
+                }
+
+                const formData = {
+                    origen: origenSelect.value,
+                    identifier: identifierInput.value.trim(),
+                    user: loggedInUser,
+                    description: descriptionInput.value.trim(),
+                    vendedor: vendedorInput.value.trim(),
+                    relatedNvNumber: relatedNvNumberInput.value.trim(),
+                    armadoPor: armadoPorInput.value.trim(),
+                    fechaPedido: fechaPedidoInput.value,
+                    nombreCliente: nombreClienteInput.value.trim(),
+                    tipoDespacho: tipoDespachoSelect.value,
+                    courier: courierSelect.value === 'Otros' ? courierOtroInput.value.trim() : courierSelect.value,
+                    numeroBultos: numeroBultosInput.value
+                };
+
+                // Validaciones
+                for (const [key, value] of Object.entries(formData)) {
+                    const element = document.getElementById(key);
+                    if (element?.required && !value) {
+                        showStatus(formStatus, `❌ El campo "${element.previousElementSibling?.textContent || key}" es obligatorio.`, true);
+                        element.focus();
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+                }
+
+                if (formData.tipoDespacho === 'Envío a Domicilio' && !formData.courier) {
+                    showStatus(formStatus, '❌ Debe seleccionar o ingresar un Courier para el envío.', true);
+                    courierSelect.focus();
+                    courierSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const docFile = nvDocumentInput.files[0];
+                if (!docFile) {
+                    showStatus(formStatus, '❌ Falta el documento principal.', true);
+                    nvDocumentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const photoInputs = additionalPhotosContainer.querySelectorAll('.additional-photo-input');
+                const photoFiles = Array.from(photoInputs).map(input => input.files[0]);
+                if (photoFiles.some(file => !file)) {
+                    showStatus(formStatus, '❌ Una o más fotos adicionales no tienen archivo.', true);
+                    return;
+                }
+
+                toggleSubmitButton(true);
+                showStatus(formStatus, '📁 Procesando archivos...', false, true);
+
+                const filePromises = [readFileAsBase64(docFile), ...photoFiles.map(file => readFileAsBase64(file))];
+                Promise.all(filePromises).then(fileResults => {
+                    formData.nvDocumentInfo = fileResults[0];
+                    formData.additionalPhotosInfo = fileResults.slice(1);
+                    showStatus(formStatus, `📤 Subiendo ${fileResults.length} archivo(s)...`, false, true);
+
+                    // Aquí iría la llamada real a Google Apps Script
+                    // google.script.run.withSuccessHandler(onUploadSuccess).withFailureHandler(onUploadFailure).processFormData(formData);
+                    
+                    // Simulación para demo
+                    setTimeout(() => {
+                        onUploadSuccess("✅ Pedido guardado con éxito.");
+                    }, 2000);
+                }).catch(error => {
+                    toggleSubmitButton(false);
+                    showStatus(formStatus, `❌ Error procesando archivos: ${error.message}.`, true);
+                });
+            });
+        }
+
+        function onUploadSuccess(response) {
+            toggleSubmitButton(false);
+            resetFormVisuals();
+            showStatus(formStatus, response || "✅ Pedido guardado con éxito.", false);
+            
+            // Scroll to top to show success message
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            setTimeout(() => hideStatus(formStatus), 8000);
+        }
+
+        function onUploadFailure(error) {
+            toggleSubmitButton(false);
+            showStatus(formStatus, `❌ Error del servidor: ${error.message || 'Desconocido'}`, true);
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            if (loginView) loginView.classList.remove('hidden');
+            if (contentView) contentView.classList.add('hidden');
+            setInitialDate();
+            
+            // Detectar si es móvil y aplicar optimizaciones adicionales
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                document.body.classList.add('mobile-device');
+                
+                // Prevenir zoom en inputs en iOS
+                const metaViewport = document.querySelector('meta[name=viewport]');
+                if (metaViewport) {
+                    metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                }
+            }
+        });
+
+        // Prevenir comportamientos no deseados en móviles
+        document.addEventListener('touchstart', function() {}, { passive: true });
+        
+        // Mejorar la experiencia de scroll
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 10) {
+                header.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+            } else {
+                header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            }
+        });
+
+        // Manejar cambios de orientación
+        window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+                window.scrollTo(0, 0);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
