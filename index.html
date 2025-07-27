@@ -448,8 +448,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="nombreCliente">👤 Nombre del Cliente</label>
-                        <input type="text" id="nombreCliente" placeholder="Nombre completo del cliente" required>
+                        <label for="nombreCliente">👤 Cliente</label>
+                        <input type="text" id="nombreCliente" placeholder="Nombre del cliente" required>
                     </div>
 
                     <div class="form-group">
@@ -460,7 +460,7 @@
 
                     <div class="form-group">
                         <label for="armadoPor">👷‍♂️ Armado por</label>
-                        <input type="text" id="armadoPor" placeholder="Nombre de quien armó el pedido" required>
+                        <input type="text" id="armadoPor" placeholder="Siglas" required>
                     </div>
                 </div>
 
@@ -472,8 +472,8 @@
                         <label for="tipoDespacho">📦 Tipo de Despacho</label>
                         <select id="tipoDespacho" required>
                             <option value="">-- Seleccione --</option>
-                            <option value="Retiro en Tienda">🏪 Retiro en Tienda</option>
-                            <option value="Envío a Domicilio">🏠 Envío a Domicilio</option>
+                            <option value="RETIRO">🏪 RETIRO</option>
+                            <option value="ENVIO">🏠 ENVIO</option>
                         </select>
                     </div>
 
@@ -517,7 +517,7 @@
                 <div class="form-group highlight">
                     <h3 style="margin-bottom: 1rem; color: #667eea;">📄 Documento Principal</h3>
                     <div class="file-upload-area" onclick="document.getElementById('nvDocumentInput').click()">
-                        <input type="file" id="nvDocumentInput" class="file-input" accept="image/*,application/pdf" required>
+                        <input type="file" id="nvDocumentInput" class="file-input" accept="image/*,application/pdf" capture="environment" required>
                         <div class="upload-icon">📁</div>
                         <div class="upload-text">Toca para seleccionar imagen o PDF</div>
                     </div>
@@ -749,7 +749,7 @@
         }
 
         function handleTipoDespachoChange() {
-            const isEnvio = tipoDespachoSelect.value === 'Envío a Domicilio';
+            const isEnvio = tipoDespachoSelect.value === 'ENVIO';
             courierGroup.classList.toggle('hidden', !isEnvio);
             courierSelect.required = isEnvio;
             if (!isEnvio) handleCourierChange();
@@ -810,7 +810,7 @@
                 <button type="button" class="remove-btn" onclick="removePhotoItem(this)">×</button>
                 <label for="additionalPhotoInput_${uniqueId}">📸 Foto Adicional ${photoNumber}</label>
                 <div class="file-upload-area" onclick="document.getElementById('additionalPhotoInput_${uniqueId}').click()">
-                    <input type="file" id="additionalPhotoInput_${uniqueId}" class="file-input additional-photo-input" accept="image/*" required>
+                    <input type="file" id="additionalPhotoInput_${uniqueId}" class="file-input additional-photo-input" accept="image/*" capture="environment" required>
                     <div class="upload-icon">📷</div>
                     <div class="upload-text">Toca para seleccionar imagen</div>
                 </div>
@@ -823,6 +823,24 @@
             const newInput = photoItem.querySelector('.additional-photo-input');
             const newPreview = photoItem.querySelector('.preview-container');
             const newUploadArea = photoItem.querySelector('.file-upload-area');
+
+            // OPTIMIZACIÓN ANDROID: Aplicar misma lógica que el documento principal
+            setTimeout(() => {
+                // Remover y re-añadir atributos para forzar compatibilidad Android
+                newInput.removeAttribute('accept');
+                newInput.removeAttribute('capture');
+                
+                // Re-aplicar atributos con delay para Android
+                setTimeout(() => {
+                    newInput.setAttribute('accept', 'image/*');
+                    newInput.setAttribute('capture', 'environment');
+                    
+                    // Forzar re-renderizado
+                    newInput.style.display = 'none';
+                    newInput.offsetHeight; // Trigger reflow
+                    newInput.style.display = '';
+                }, 50);
+            }, 100);
 
             newInput.addEventListener('change', () => {
                 const file = newInput.files[0];
@@ -891,7 +909,7 @@
                     }
                 }
 
-                if (formData.tipoDespacho === 'Envío a Domicilio' && !formData.courier) {
+                if (formData.tipoDespacho === 'ENVIO' && !formData.courier) {
                     showStatus(formStatus, '❌ Debe seleccionar o ingresar un Courier para el envío.', true);
                     courierSelect.focus();
                     courierSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
