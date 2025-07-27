@@ -810,7 +810,7 @@
                 <button type="button" class="remove-btn" onclick="removePhotoItem(this)">×</button>
                 <label for="additionalPhotoInput_${uniqueId}">📸 Foto Adicional ${photoNumber}</label>
                 <div class="file-upload-area" onclick="document.getElementById('additionalPhotoInput_${uniqueId}').click()">
-                    <input type="file" id="additionalPhotoInput_${uniqueId}" class="file-input additional-photo-input" accept="image/*" capture="environment" required>
+                    <input type="file" id="additionalPhotoInput_${uniqueId}" class="file-input additional-photo-input" accept="image/*,application/pdf" capture="environment" required>
                     <div class="upload-icon">📷</div>
                     <div class="upload-text">Toca para seleccionar imagen</div>
                 </div>
@@ -823,24 +823,6 @@
             const newInput = photoItem.querySelector('.additional-photo-input');
             const newPreview = photoItem.querySelector('.preview-container');
             const newUploadArea = photoItem.querySelector('.file-upload-area');
-
-            // OPTIMIZACIÓN ANDROID: Aplicar misma lógica que el documento principal
-            setTimeout(() => {
-                // Remover y re-añadir atributos para forzar compatibilidad Android
-                newInput.removeAttribute('accept');
-                newInput.removeAttribute('capture');
-                
-                // Re-aplicar atributos con delay para Android
-                setTimeout(() => {
-                    newInput.setAttribute('accept', 'image/*');
-                    newInput.setAttribute('capture', 'environment');
-                    
-                    // Forzar re-renderizado
-                    newInput.style.display = 'none';
-                    newInput.offsetHeight; // Trigger reflow
-                    newInput.style.display = '';
-                }, 50);
-            }, 100);
 
             newInput.addEventListener('change', () => {
                 const file = newInput.files[0];
