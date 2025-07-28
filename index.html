@@ -661,9 +661,67 @@
             }
             
             toggleLoader(true);
-            updateProgress(0, 'Preparando imágenes...');
+            updateProgress(0, 'Validando pedido...');
 
             try {
+                // Obtener valores para validación
+                const identifier = document.getElementById('identifier').value.trim();
+                const origen = document.getElementById('origen').value;
+                
+                // VALIDACIÓN 1: Verificar duplicados (para TODOS los orígenes)
+                updateProgress(10, 'Verificando si el pedido ya existe...');
+                
+                const checkDuplicateResponse = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'text/plain;charset=utf-8' 
+                    },
+                    body: JSON.stringify({
+                        action: 'checkDuplicate',
+                        identifier: identifier,
+                        origen: origen
+                    })
+                });
+                
+                if (checkDuplicateResponse.ok) {
+                    const duplicateResult = await checkDuplicateResponse.json();
+                    
+                    if (duplicateResult.exists) {
+                        showStatus(`Error: Este pedido ya fue registrado el ${duplicateResult.date} por ${duplicateResult.user}`, 'error');
+                        toggleLoader(false);
+                        return;
+                    }
+                }
+                
+                // VALIDACIÓN 2: Solo para NV - verificar si existe en maestro
+                if (origen === 'NV') {
+                    updateProgress(20, 'Verificando NV en administración...');
+                    
+                    const checkNVResponse = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'text/plain;charset=utf-8' 
+                        },
+                        body: JSON.stringify({
+                            action: 'checkNVExists',
+                            nvNumber: identifier
+                        })
+                    });
+                    
+                    if (checkNVResponse.ok) {
+                        const nvResult = await checkNVResponse.json();
+                        
+                        if (!nvResult.exists) {
+                            showStatus('Error: Esta NV no ha sido registrada en administración', 'error');
+                            toggleLoader(false);
+                            return;
+                        }
+                    }
+                }
+                
+                // Si pasó las validaciones, continuar con el proceso normal
+                updateProgress(30, 'Validación exitosa. Preparando imágenes...');
+                
                 const docFile = document.getElementById('nvDocumentInfo').files[0];
                 const additionalFiles = Array.from(document.getElementById('additionalPhotosInfo').files).slice(0, MAX_ADDITIONAL_PHOTOS);
                 
@@ -672,22 +730,22 @@
                 let processedFiles = 0;
                 
                 // Procesar documento principal
-                updateProgress(5, 'Comprimiendo imagen principal...');
+                updateProgress(35, 'Comprimiendo imagen principal...');
                 const nvDocumentInfo = await compressAndConvertImage(docFile, 1920, 0.8);
                 processedFiles++;
-                updateProgress((processedFiles / totalFiles) * 70, `Procesada ${processedFiles} de ${totalFiles} imágenes`);
+                updateProgress(30 + (processedFiles / totalFiles) * 50, `Procesada ${processedFiles} de ${totalFiles} imágenes`);
                 
                 // Procesar fotos adicionales
                 const additionalPhotosInfo = [];
                 for (let i = 0; i < additionalFiles.length; i++) {
                     updateProgress(
-                        ((processedFiles + 0.5) / totalFiles) * 70, 
+                        30 + ((processedFiles + 0.5) / totalFiles) * 50, 
                         `Comprimiendo foto ${i + 1} de ${additionalFiles.length}...`
                     );
                     const compressedImage = await compressAndConvertImage(additionalFiles[i], 1920, 0.8);
                     additionalPhotosInfo.push(compressedImage);
                     processedFiles++;
-                    updateProgress((processedFiles / totalFiles) * 70, `Procesadas ${processedFiles} de ${totalFiles} imágenes`);
+                    updateProgress(30 + (processedFiles / totalFiles) * 50, `Procesadas ${processedFiles} de ${totalFiles} imágenes`);
                 }
 
                 // Determinar el valor de courier
@@ -700,12 +758,12 @@
                     }
                 }
 
-                updateProgress(75, 'Preparando datos del formulario...');
+                updateProgress(85, 'Preparando datos del formulario...');
 
                 const formData = {
                     user: document.getElementById('executingUser').value.trim(),
-                    origen: document.getElementById('origen').value,
-                    identifier: document.getElementById('identifier').value.trim(),
+                    origen: origen,
+                    identifier: identifier,
                     description: document.getElementById('description').value.trim(),
                     vendedor: document.getElementById('vendedor').value.trim(),
                     relatedNvNumber: document.getElementById('relatedNvNumber').value.trim(),
@@ -719,11 +777,10 @@
                     additionalPhotosInfo: additionalPhotosInfo
                 };
                 
-                updateProgress(80, 'Enviando pedido...');
+                updateProgress(90, 'Enviando pedido...');
                 
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 
                         'Content-Type': 'text/plain;charset=utf-8' 
                     },
@@ -733,13 +790,23 @@
                     })
                 });
 
-                updateProgress(100, 'Pedido enviado con éxito');
-                
-                // Como estamos usando no-cors, no podemos leer la respuesta
-                // Asumimos éxito si no hay error
-                setTimeout(() => {
-                    onFormSuccess('Pedido guardado exitosamente');
-                }, 500);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        updateProgress(100, 'Pedido enviado con éxito');
+                        setTimeout(() => {
+                            onFormSuccess(result.message || 'Pedido guardado exitosamente');
+                        }, 500);
+                    } else {
+                        onFailure({ message: result.error || 'Error al guardar el pedido' });
+                    }
+                } else {
+                    // Si no podemos leer la respuesta, asumimos éxito
+                    updateProgress(100, 'Pedido enviado');
+                    setTimeout(() => {
+                        onFormSuccess('Pedido guardado exitosamente');
+                    }, 500);
+                }
 
             } catch (error) {
                 console.error('Error:', error);
