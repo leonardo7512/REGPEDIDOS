@@ -184,28 +184,21 @@
 <body>
 
     <div class="container">
-        <div id="login-section">
-            <h2>Acceso de Usuario</h2>
-            <form id="login-form" class="form-grid">
-                <div class="form-group full-width">
-                    <label for="username">Usuario</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group full-width">
-                    <label for="password">Contraseña</label>
-                    <input type="password" id="password" required>
-                </div>
-                <div class="full-width">
-                    <button type="submit" class="btn btn-primary">Ingresar</button>
-                </div>
-            </form>
-        </div>
-
-        <div id="pedido-section" class="hidden">
-            <h2>Registrar Pedido <span id="welcome-user" style="font-weight: normal; font-size: 0.7em; color: var(--secondary-color);"></span></h2>
+        <div id="pedido-section">
+            <h2>Registrar Pedido</h2>
             <form id="pedido-form">
                 <div class="form-grid">
                     
+                    <div class="form-group">
+                        <label for="executingUser">Su Nombre / Usuario</label>
+                        <input type="text" id="executingUser" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="identifier">N° Pedido / ID Venta</label>
+                        <input type="text" id="identifier" required>
+                    </div>
+
                     <div class="form-group">
                         <label for="origen">Origen del Pedido</label>
                         <select id="origen" required>
@@ -219,13 +212,8 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="identifier">N° Pedido / ID Venta</label>
-                        <input type="text" id="identifier" required>
-                    </div>
-
                     <div id="nv-fields" class="form-group hidden">
-                        <label for="vendedor">Vendedor</label>
+                        <label for="vendedor">Vendedor (si origen es NV)</label>
                         <input type="text" id="vendedor">
                     </div>
 
@@ -299,15 +287,10 @@
 
     <script>
         // --- CONFIGURACIÓN ---
-        // ¡¡¡IMPORTANTE!!! PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE GOOGLE
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyM7DYlQIbj5YkkA7KCREr1xJzf-Z6JDIzhNJCq8SJj8ZhCGzhk0MCMaDEUZgy6OMXIUA/exec';
 
         // --- VARIABLES Y ELEMENTOS ---
-        let loggedInUser = null;
         const MAX_ADDITIONAL_PHOTOS = 10;
-        const loginSection = document.getElementById('login-section');
-        const pedidoSection = document.getElementById('pedido-section');
-        const loginForm = document.getElementById('login-form');
         const pedidoForm = document.getElementById('pedido-form');
         const statusDiv = document.getElementById('status');
         const loader = document.getElementById('loader');
@@ -319,8 +302,12 @@
         const additionalPhotosInput = document.getElementById('additionalPhotosInfo');
         const photosPreview = document.getElementById('photos-preview');
 
+        // Inicializar fecha al cargar la página
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.getElementById('fechaPedido').valueAsDate = new Date();
+        });
+
         // --- MANEJADORES DE EVENTOS ---
-        loginForm.addEventListener('submit', handleLoginSubmit);
         pedidoForm.addEventListener('submit', handlePedidoSubmit);
         
         origenSelect.addEventListener('change', function() {
@@ -350,41 +337,7 @@
             });
         });
 
-        // --- FUNCIONES DE LÓGICA (USANDO fetch) ---
-        
-        async function handleLoginSubmit(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            if (!username || !password) {
-                showStatus('Por favor, ingrese usuario y contraseña.', 'error');
-                return;
-            }
-            toggleLoader(true);
-
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'checkLogin',
-                        data: { username, password }
-                    })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    onLoginSuccess();
-                } else {
-                    onFailure({ message: result.error || 'Usuario o contraseña inválido.' });
-                }
-            } catch (error) {
-                onFailure(error);
-            } finally {
-                toggleLoader(false);
-            }
-        }
-
+        // --- FUNCIÓN PRINCIPAL DE ENVÍO ---
         async function handlePedidoSubmit(e) {
             e.preventDefault();
             if (!pedidoForm.checkValidity()) {
@@ -403,9 +356,10 @@
                 const [nvDocumentInfo, ...additionalPhotosInfo] = await Promise.all([nvDocumentInfoPromise, ...additionalPhotosInfoPromises]);
 
                 const formData = {
+                    // El campo 'user' ahora se toma del nuevo input 'executingUser'
+                    user: document.getElementById('executingUser').value.trim(),
                     origen: document.getElementById('origen').value,
                     identifier: document.getElementById('identifier').value,
-                    user: loggedInUser,
                     description: document.getElementById('description').value,
                     vendedor: document.getElementById('vendedor').value,
                     relatedNvNumber: document.getElementById('relatedNvNumber').value,
@@ -444,21 +398,13 @@
         }
 
         // --- FUNCIONES DE UTILIDAD (Callbacks y Helpers) ---
-
-        function onLoginSuccess() {
-            loggedInUser = document.getElementById('username').value.trim();
-            loginSection.classList.add('hidden');
-            pedidoSection.classList.remove('hidden');
-            document.getElementById('welcome-user').textContent = `| Usuario: ${loggedInUser}`;
-            showStatus('');
-            document.getElementById('fechaPedido').valueAsDate = new Date();
-        }
         
         function onFormSuccess(message) {
             showStatus(message, 'success');
             pedidoForm.reset();
             photosPreview.innerHTML = '';
-            document.getElementById('fechaPedido').valueAsDate = new Date();
+            document.getElementById('fechaPedido').valueAsDate = new Date(); // Resetear fecha
+            // Ocultar campos dinámicos para el siguiente registro
             nvFields.classList.add('hidden');
             nvRelatedFields.classList.add('hidden');
             courierField.classList.add('hidden');
