@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Pedido v2.5</title>
+    <title>Registrar Pedido v2.6</title>
     <style>
         * {
             box-sizing: border-box;
@@ -239,6 +239,11 @@
             margin-top: 10px;
         }
 
+        .preview-container {
+            position: relative;
+            display: inline-block;
+        }
+
         .preview-image {
             width: 60px;
             height: 60px;
@@ -249,15 +254,40 @@
             transition: transform 0.2s;
         }
 
-        .preview-image:hover {
-            transform: scale(1.1);
+        .preview-container:hover .preview-image {
+            transform: scale(1.05);
             border-color: var(--primary-color);
         }
 
-        .single-preview {
+        .preview-container.single-preview .preview-image {
             width: 100px;
             height: 100px;
-            margin-top: 10px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            color: white;
+            border: 2px solid white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+            transform: scale(1.1);
         }
 
         /* Asegurar que los selects se vean correctamente */
@@ -317,6 +347,24 @@
             margin-top: 8px;
             font-size: 0.85em;
             color: var(--secondary-color);
+        }
+
+        .clear-all-btn {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid var(--danger-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: white;
+            color: var(--danger-color);
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .clear-all-btn:hover {
+            background-color: var(--danger-color);
+            color: white;
         }
 
     </style>
@@ -472,6 +520,7 @@
                         <input type="file" id="additionalPhotosInfoCamera" name="additionalPhotosInfoCamera" accept="image/*" capture="camera" multiple class="hidden-file-input">
                         <div id="photos-file-name" class="file-name"></div>
                         <div id="photos-preview" class="file-preview"></div>
+                        <button type="button" id="clear-all-photos" class="clear-all-btn hidden" onclick="clearAllAdditionalPhotos()">Eliminar todas las fotos</button>
                     </div>
 
                     <div class="form-group full-width">
@@ -522,6 +571,11 @@
         const photosFileName = document.getElementById('photos-file-name');
         const progressFill = document.getElementById('progress-fill');
         const progressText = document.getElementById('progress-text');
+        const clearAllPhotosBtn = document.getElementById('clear-all-photos');
+
+        // Array para mantener track de los archivos adicionales
+        let additionalFilesArray = [];
+        let fileIdCounter = 0; // Contador único para identificar archivos
 
         // Inicializar fecha al cargar la página
         window.addEventListener('DOMContentLoaded', function() {
@@ -597,57 +651,135 @@
                 docFileName.textContent = `Archivo seleccionado: ${file.name}`;
                 const reader = new FileReader();
                 reader.onload = e => {
+                    const container = document.createElement('div');
+                    container.className = 'preview-container single-preview';
+                    
                     const img = document.createElement('img');
                     img.src = e.target.result;
-                    img.classList.add('preview-image', 'single-preview');
-                    docPreview.appendChild(img);
+                    img.classList.add('preview-image');
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.type = 'button';
+                    deleteBtn.onclick = function() {
+                        // Limpiar el input y la vista previa
+                        nvDocumentInput.value = '';
+                        nvDocumentInput.files = new DataTransfer().files;
+                        docPreview.innerHTML = '';
+                        docFileName.textContent = '';
+                    };
+                    
+                    container.appendChild(img);
+                    container.appendChild(deleteBtn);
+                    docPreview.appendChild(container);
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        // Vista previa de fotos adicionales
+        // Vista previa de fotos adicionales (CORREGIDO)
         additionalPhotosInput.addEventListener('change', function(event) {
-            handleAdditionalPhotos(event.target.files);
+            const newFiles = Array.from(event.target.files);
+
+            // Mapeamos los nuevos archivos a objetos con ID único
+            const newFileObjects = newFiles.map(file => ({
+                id: ++fileIdCounter,
+                file: file
+            }));
+
+            // Combinamos el array existente con los nuevos archivos
+            additionalFilesArray = [...additionalFilesArray, ...newFileObjects];
+
+            // Verificamos si se excede el límite
+            if (additionalFilesArray.length > MAX_ADDITIONAL_PHOTOS) {
+                additionalFilesArray = additionalFilesArray.slice(0, MAX_ADDITIONAL_PHOTOS);
+                showStatus(`Solo se permiten máximo ${MAX_ADDITIONAL_PHOTOS} fotos. Se tomarán las primeras ${MAX_ADDITIONAL_PHOTOS}.`, 'error');
+            }
+            
+            // Actualizamos el input y renderizamos la vista previa
+            updateAdditionalPhotosInput();
+            renderAdditionalPhotos();
         });
 
         additionalPhotosCameraInput.addEventListener('change', function(event) {
             const newFiles = Array.from(event.target.files);
-            const existingFiles = Array.from(additionalPhotosInput.files);
             
-            // Combinar archivos existentes con nuevos
-            const dataTransfer = new DataTransfer();
-            [...existingFiles, ...newFiles].slice(0, MAX_ADDITIONAL_PHOTOS).forEach(file => {
-                dataTransfer.items.add(file);
-            });
+            // Agregar nuevos archivos con ID único
+            const newFileObjects = newFiles.map(file => ({
+                id: ++fileIdCounter,
+                file: file
+            }));
             
-            additionalPhotosInput.files = dataTransfer.files;
-            handleAdditionalPhotos(additionalPhotosInput.files);
+            additionalFilesArray = [...additionalFilesArray, ...newFileObjects].slice(0, MAX_ADDITIONAL_PHOTOS);
+            
+            if (additionalFilesArray.length === MAX_ADDITIONAL_PHOTOS && newFiles.length > 0) {
+                showStatus(`Se alcanzó el límite de ${MAX_ADDITIONAL_PHOTOS} fotos.`, 'info');
+            }
+            
+            updateAdditionalPhotosInput();
+            renderAdditionalPhotos();
         });
 
-        function handleAdditionalPhotos(files) {
+        function updateAdditionalPhotosInput() {
+            // Actualizar el input file con los archivos del array
+            const dataTransfer = new DataTransfer();
+            additionalFilesArray.forEach(fileObj => {
+                dataTransfer.items.add(fileObj.file);
+            });
+            additionalPhotosInput.files = dataTransfer.files;
+        }
+
+        function renderAdditionalPhotos() {
             photosPreview.innerHTML = '';
             photosFileName.textContent = '';
-            const fileArray = Array.from(files).slice(0, MAX_ADDITIONAL_PHOTOS);
             
-            if (files.length > MAX_ADDITIONAL_PHOTOS) {
-                showStatus(`Solo se permiten máximo ${MAX_ADDITIONAL_PHOTOS} fotos adicionales. Se tomarán las primeras ${MAX_ADDITIONAL_PHOTOS}.`, 'error');
+            if (additionalFilesArray.length > 0) {
+                photosFileName.textContent = `${additionalFilesArray.length} archivo(s) seleccionado(s)`;
+                clearAllPhotosBtn.classList.remove('hidden');
+                
+                // Renderizar todas las imágenes
+                additionalFilesArray.forEach((fileObj) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const container = document.createElement('div');
+                        container.className = 'preview-container';
+                        container.setAttribute('data-file-id', fileObj.id);
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.classList.add('preview-image');
+                        
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete-btn';
+                        deleteBtn.innerHTML = '×';
+                        deleteBtn.type = 'button';
+                        deleteBtn.onclick = function() {
+                            removeAdditionalPhoto(fileObj.id);
+                        };
+                        
+                        container.appendChild(img);
+                        container.appendChild(deleteBtn);
+                        photosPreview.appendChild(container);
+                    };
+                    reader.readAsDataURL(fileObj.file);
+                });
+            } else {
+                clearAllPhotosBtn.classList.add('hidden');
             }
-            
-            if (fileArray.length > 0) {
-                photosFileName.textContent = `${fileArray.length} archivo(s) seleccionado(s)`;
-            }
-            
-            fileArray.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.classList.add('preview-image');
-                    photosPreview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
+        }
+
+        function removeAdditionalPhoto(fileId) {
+            additionalFilesArray = additionalFilesArray.filter(fileObj => fileObj.id !== fileId);
+            updateAdditionalPhotosInput();
+            renderAdditionalPhotos();
+        }
+
+        function clearAllAdditionalPhotos() {
+            additionalFilesArray = [];
+            fileIdCounter = 0;
+            updateAdditionalPhotosInput();
+            renderAdditionalPhotos();
         }
 
         // --- FUNCIÓN PRINCIPAL DE ENVÍO ---
@@ -723,7 +855,7 @@
                 updateProgress(30, 'Validación exitosa. Preparando imágenes...');
                 
                 const docFile = document.getElementById('nvDocumentInfo').files[0];
-                const additionalFiles = Array.from(document.getElementById('additionalPhotosInfo').files).slice(0, MAX_ADDITIONAL_PHOTOS);
+                const additionalFiles = additionalFilesArray.map(fileObj => fileObj.file);
                 
                 // Comprimir y procesar imágenes con progreso
                 const totalFiles = 1 + additionalFiles.length;
@@ -885,6 +1017,8 @@
             docPreview.innerHTML = '';
             docFileName.textContent = '';
             photosFileName.textContent = '';
+            additionalFilesArray = [];
+            clearAllPhotosBtn.classList.add('hidden');
             
             // Resetear fecha
             const today = new Date();
@@ -926,8 +1060,6 @@
             }
             document.getElementById('submit-btn').disabled = show;
         }
-
-
     </script>
 
 </body>
