@@ -1,9 +1,308 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Registrar Pedido v2.4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+            --border-color: #ced4da;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        @media (min-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        input[type="text"],
+        input[type="password"],
+        input[type="date"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1em;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="login-section">
+            <h2>Acceso de Usuario</h2>
+            <form id="login-form" class="form-grid">
+                <div class="form-group full-width">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group full-width">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="full-width">
+                    <button type="submit" class="btn btn-primary">Ingresar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="pedido-section" class="hidden">
+            <h2>Registrar Pedido <span id="welcome-user" style="font-weight: normal; font-size: 0.7em; color: var(--secondary-color);"></span></h2>
+            <form id="pedido-form">
+                <div class="form-grid">
+                    
+                    <div class="form-group">
+                        <label for="origen">Origen del Pedido</label>
+                        <select id="origen" required>
+                            <option value="">Seleccione...</option>
+                            <option value="FALAB">FALABELLA</option>
+                            <option value="ML">MERCADO LIBRE</option>
+                            <option value="WB">WEB</option>
+                            <option value="NV">NOTA DE VENTA</option>
+                            <option value="RIPLEY">RIPLEY</option>
+                            <option value="DEVO">DEVOLUCIÓN</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="identifier">N° Pedido / ID Venta</label>
+                        <input type="text" id="identifier" required>
+                    </div>
+
+                    <div id="nv-fields" class="form-group hidden">
+                        <label for="vendedor">Vendedor</label>
+                        <input type="text" id="vendedor">
+                    </div>
+
+                    <div id="nv-related-fields" class="form-group hidden">
+                        <label for="relatedNvNumber">N° NV Relacionada</label>
+                        <input type="text" id="relatedNvNumber">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fechaPedido">Fecha del Pedido</label>
+                        <input type="date" id="fechaPedido" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nombreCliente">Nombre del Cliente</label>
+                        <input type="text" id="nombreCliente" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="armadoPor">Armado Por</label>
+                        <input type="text" id="armadoPor" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoDespacho">Tipo de Despacho</label>
+                        <select id="tipoDespacho" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Retiro en Tienda">Retiro en Tienda</option>
+                            <option value="Envío a Domicilio">Envío a Domicilio</option>
+                        </select>
+                    </div>
+                    
+                    <div id="courier-field" class="form-group hidden">
+                        <label for="courier">Courier</label>
+                        <input type="text" id="courier">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numeroBultos">N° de Bultos</label>
+                        <input type="number" id="numeroBultos" min="1" value="1" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Descripción / Observaciones</label>
+                        <textarea id="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="nvDocumentInfo">Documento Principal (Boleta, Guía, etc.) <small>(1 archivo)</small></label>
+                        <input type="file" id="nvDocumentInfo" accept="image/*,application/pdf" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="additionalPhotosInfo">Fotos Adicionales del Paquete <small>(máx. 10)</small></label>
+                        <input type="file" id="additionalPhotosInfo" accept="image/*" multiple>
+                        <div id="photos-preview" class="file-preview"></div>
+                    </div>
+
+                    <div class="form-group full-width">
+                         <button type="submit" id="submit-btn" class="btn btn-primary">Guardar Pedido</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="status"></div>
+        <div id="loader" class="loader-overlay hidden">
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <script>
         // --- CONFIGURACIÓN ---
         // ¡¡¡IMPORTANTE!!! PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE GOOGLE
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzMYNMybUueXMqUTwQoVfw887laT98aAv-qzstQwHBjF1JhfoQtIxvg2HhVvtxNSH1T/exec';
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyM7DYlQIbj5YkkA7KCREr1xJzf-Z6JDIzhNJCq8SJj8ZhCGzhk0MCMaDEUZgy6OMXIUA/exec';
 
-        // --- VARIABLES Y ELEMENTOS (sin cambios) ---
+        // --- VARIABLES Y ELEMENTOS ---
         let loggedInUser = null;
         const MAX_ADDITIONAL_PHOTOS = 10;
         const loginSection = document.getElementById('login-section');
@@ -20,11 +319,10 @@
         const additionalPhotosInput = document.getElementById('additionalPhotosInfo');
         const photosPreview = document.getElementById('photos-preview');
 
-        // --- MANEJADORES DE EVENTOS (ligeramente modificados) ---
+        // --- MANEJADORES DE EVENTOS ---
         loginForm.addEventListener('submit', handleLoginSubmit);
         pedidoForm.addEventListener('submit', handlePedidoSubmit);
         
-        // ... (el resto de manejadores de eventos para la UI no cambian) ...
         origenSelect.addEventListener('change', function() {
             const isNV = this.value === 'NV';
             nvFields.classList.toggle('hidden', !isNV);
@@ -52,7 +350,7 @@
             });
         });
 
-        // --- FUNCIONES DE LÓGICA (MODIFICADAS PARA USAR fetch) ---
+        // --- FUNCIONES DE LÓGICA (USANDO fetch) ---
         
         async function handleLoginSubmit(e) {
             e.preventDefault();
@@ -67,7 +365,7 @@
             try {
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Necesario para evitar preflight CORS
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: 'checkLogin',
                         data: { username, password }
@@ -98,14 +396,13 @@
             showStatus('Procesando...', 'info');
 
             try {
-                // La lógica para leer archivos no cambia
                 const docFile = document.getElementById('nvDocumentInfo').files[0];
                 const additionalFiles = Array.from(document.getElementById('additionalPhotosInfo').files).slice(0, MAX_ADDITIONAL_PHOTOS);
                 const nvDocumentInfoPromise = readFileAsBase64(docFile);
                 const additionalPhotosInfoPromises = additionalFiles.map(file => readFileAsBase64(file));
                 const [nvDocumentInfo, ...additionalPhotosInfo] = await Promise.all([nvDocumentInfoPromise, ...additionalPhotosInfoPromises]);
 
-                const formData = { /* ... (el objeto formData se construye igual que antes) ... */
+                const formData = {
                     origen: document.getElementById('origen').value,
                     identifier: document.getElementById('identifier').value,
                     user: loggedInUser,
@@ -122,7 +419,6 @@
                     additionalPhotosInfo: additionalPhotosInfo
                 };
                 
-                // La nueva llamada usando fetch
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -147,7 +443,7 @@
             }
         }
 
-        // --- FUNCIONES DE UTILIDAD (Callbacks y Helpers - modificados para ser más genéricos) ---
+        // --- FUNCIONES DE UTILIDAD (Callbacks y Helpers) ---
 
         function onLoginSuccess() {
             loggedInUser = document.getElementById('username').value.trim();
@@ -182,7 +478,6 @@
             document.getElementById('submit-btn').disabled = show;
         }
 
-        // La función readFileAsBase64 no cambia
         function readFileAsBase64(file) {
             return new Promise((resolve, reject) => {
                 if (!file) {
@@ -203,5 +498,6 @@
             });
         }
     </script>
+
 </body>
 </html>
