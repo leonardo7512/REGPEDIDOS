@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Pedido v2.4</title>
+    <title>Registrar Pedido v2.5</title>
     <style>
         * {
             box-sizing: border-box;
@@ -211,11 +211,24 @@
         }
 
         .preview-image {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             object-fit: cover;
             border-radius: 5px;
             border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .preview-image:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-color);
+        }
+
+        .single-preview {
+            width: 100px;
+            height: 100px;
+            margin-top: 10px;
         }
 
         /* Asegurar que los selects se vean correctamente */
@@ -228,6 +241,10 @@
             background-position: right 10px center;
             background-size: 20px;
             padding-right: 40px;
+        }
+
+        #otros-courier-field {
+            margin-top: 10px;
         }
 
     </style>
@@ -292,14 +309,33 @@
                         <label for="tipoDespacho">Tipo de Despacho</label>
                         <select id="tipoDespacho" name="tipoDespacho" required>
                             <option value="">Seleccione...</option>
-                            <option value="Retiro en Tienda">Retiro en Tienda</option>
-                            <option value="Envío a Domicilio">Envío a Domicilio</option>
+                            <option value="Retiro">Retiro</option>
+                            <option value="Envío">Envío</option>
                         </select>
                     </div>
                     
                     <div id="courier-field" class="form-group hidden">
                         <label for="courier">Courier</label>
-                        <input type="text" id="courier" name="courier">
+                        <select id="courier" name="courier">
+                            <option value="">Seleccione...</option>
+                            <option value="BLUE">BLUE</option>
+                            <option value="STARKEN">STARKEN</option>
+                            <option value="TUTTO PETS">TUTTO PETS</option>
+                            <option value="JM">JM</option>
+                            <option value="CA">CA</option>
+                            <option value="VARMONTT">VARMONTT</option>
+                            <option value="PULLMAN">PULLMAN</option>
+                            <option value="TVP">TVP</option>
+                            <option value="CACEM">CACEM</option>
+                            <option value="MERCOSUR">MERCOSUR</option>
+                            <option value="CORREOS DE CHILE">CORREOS DE CHILE</option>
+                            <option value="CRUZ DEL SUR">CRUZ DEL SUR</option>
+                            <option value="CHILEXPRESS">CHILEXPRESS</option>
+                            <option value="OTROS">OTROS</option>
+                        </select>
+                        <div id="otros-courier-field" class="hidden">
+                            <input type="text" id="otros-courier" name="otros-courier" placeholder="Especifique el courier">
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -313,13 +349,14 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="nvDocumentInfo">Documento Principal (Boleta, Guía, etc.) <small>(1 archivo)</small></label>
-                        <input type="file" id="nvDocumentInfo" name="nvDocumentInfo" accept="image/*,application/pdf" required>
+                        <label for="nvDocumentInfo">Imagen Principal (Boleta, Factura, etc.) <small>(1 archivo)</small></label>
+                        <input type="file" id="nvDocumentInfo" name="nvDocumentInfo" accept="image/*" capture="environment" required>
+                        <div id="doc-preview" class="file-preview"></div>
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="additionalPhotosInfo">Fotos Adicionales del Paquete <small>(máx. 10)</small></label>
-                        <input type="file" id="additionalPhotosInfo" name="additionalPhotosInfo" accept="image/*" multiple>
+                        <label for="additionalPhotosInfo">Fotos Adicionales del Pedido <small>(máx. 10)</small></label>
+                        <input type="file" id="additionalPhotosInfo" name="additionalPhotosInfo" accept="image/*" capture="environment" multiple>
                         <div id="photos-preview" class="file-preview"></div>
                     </div>
 
@@ -350,8 +387,13 @@
         const nvRelatedFields = document.getElementById('nv-related-fields');
         const tipoDespachoSelect = document.getElementById('tipoDespacho');
         const courierField = document.getElementById('courier-field');
+        const courierSelect = document.getElementById('courier');
+        const otrosCourierField = document.getElementById('otros-courier-field');
+        const otrosCourierInput = document.getElementById('otros-courier');
         const additionalPhotosInput = document.getElementById('additionalPhotosInfo');
         const photosPreview = document.getElementById('photos-preview');
+        const nvDocumentInput = document.getElementById('nvDocumentInfo');
+        const docPreview = document.getElementById('doc-preview');
 
         // Inicializar fecha al cargar la página
         window.addEventListener('DOMContentLoaded', function() {
@@ -381,24 +423,52 @@
         });
 
         tipoDespachoSelect.addEventListener('change', function() {
-            const isEnvio = this.value === 'Envío a Domicilio';
+            const isEnvio = this.value === 'Envío';
             if (isEnvio) {
                 courierField.classList.remove('hidden');
-                document.getElementById('courier').required = true;
+                courierSelect.required = true;
             } else {
                 courierField.classList.add('hidden');
-                document.getElementById('courier').required = false;
+                courierSelect.required = false;
+                otrosCourierField.classList.add('hidden');
+                otrosCourierInput.required = false;
             }
         });
 
+        courierSelect.addEventListener('change', function() {
+            const isOtros = this.value === 'OTROS';
+            if (isOtros) {
+                otrosCourierField.classList.remove('hidden');
+                otrosCourierInput.required = true;
+            } else {
+                otrosCourierField.classList.add('hidden');
+                otrosCourierInput.required = false;
+            }
+        });
+
+        // Vista previa del documento principal
+        nvDocumentInput.addEventListener('change', function(event) {
+            docPreview.innerHTML = '';
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('preview-image', 'single-preview');
+                    docPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Vista previa de fotos adicionales
         additionalPhotosInput.addEventListener('change', function(event) {
             photosPreview.innerHTML = '';
             const files = Array.from(event.target.files).slice(0, MAX_ADDITIONAL_PHOTOS);
             
-            if (files.length > MAX_ADDITIONAL_PHOTOS) {
-                showStatus(`Solo se permiten máximo ${MAX_ADDITIONAL_PHOTOS} fotos adicionales`, 'error');
-                event.target.value = '';
-                return;
+            if (event.target.files.length > MAX_ADDITIONAL_PHOTOS) {
+                showStatus(`Solo se permiten máximo ${MAX_ADDITIONAL_PHOTOS} fotos adicionales. Se tomarán las primeras ${MAX_ADDITIONAL_PHOTOS}.`, 'error');
             }
             
             files.forEach(file => {
@@ -438,6 +508,16 @@
                     ...additionalPhotosInfoPromises
                 ]);
 
+                // Determinar el valor de courier
+                let courierValue = '';
+                if (document.getElementById('tipoDespacho').value === 'Envío') {
+                    if (courierSelect.value === 'OTROS') {
+                        courierValue = otrosCourierInput.value.trim();
+                    } else {
+                        courierValue = courierSelect.value;
+                    }
+                }
+
                 const formData = {
                     user: document.getElementById('executingUser').value.trim(),
                     origen: document.getElementById('origen').value,
@@ -449,7 +529,7 @@
                     fechaPedido: document.getElementById('fechaPedido').value,
                     nombreCliente: document.getElementById('nombreCliente').value.trim(),
                     tipoDespacho: document.getElementById('tipoDespacho').value,
-                    courier: document.getElementById('courier').value.trim(),
+                    courier: courierValue,
                     numeroBultos: document.getElementById('numeroBultos').value,
                     nvDocumentInfo: nvDocumentInfo,
                     additionalPhotosInfo: additionalPhotosInfo
@@ -485,6 +565,7 @@
             showStatus(message, 'success');
             pedidoForm.reset();
             photosPreview.innerHTML = '';
+            docPreview.innerHTML = '';
             
             // Resetear fecha
             const today = new Date();
@@ -497,6 +578,7 @@
             nvFields.classList.add('hidden');
             nvRelatedFields.classList.add('hidden');
             courierField.classList.add('hidden');
+            otrosCourierField.classList.add('hidden');
             
             // Limpiar el status después de 5 segundos
             setTimeout(() => {
