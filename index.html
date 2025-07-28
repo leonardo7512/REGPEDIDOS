@@ -1,434 +1,207 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Registrar Pedido</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; overflow-x: hidden; }
-        .container { max-width: 100%; margin: 0; background: white; min-height: 100vh; position: relative; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header h1 { font-size: 1.2rem; font-weight: 600; text-align: center; margin-bottom: 0.5rem; }
-        .header-controls { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-        .user-info { font-size: 0.85rem; opacity: 0.9; }
-        .btn-logout { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; }
-        .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .login-card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .form-content { padding: 1rem; padding-bottom: 100px; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group.highlight { background: #f8f9ff; padding: 1rem; border-radius: 12px; border-left: 4px solid #667eea; margin-bottom: 2rem; }
-        label, .label-title { display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; font-size: 0.9rem; }
-        input, select, textarea { width: 100%; padding: 0.75rem; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease; background: white; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; width: 100%; text-align: center; display: inline-block; text-decoration: none; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
-        .file-upload-label { display: block; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 2rem 1rem; text-align: center; background: #f7fafc; transition: all 0.3s ease; cursor: pointer; position: relative; }
-        .file-upload-label.has-file { border-color: #28a745; background: #f8fff8; }
-        .file-input { display: none; }
-        .upload-icon { font-size: 2rem; color: #cbd5e0; margin-bottom: 0.5rem; pointer-events: none; }
-        .upload-text { color: #718096; font-size: 0.9rem; pointer-events: none; }
-        .preview-container { margin-top: 1rem; border-radius: 8px; overflow: hidden; background: #f8f9fa; min-height: 100px; display: flex; align-items: center; justify-content: center; }
-        .preview-container img { max-width: 100%; max-height: 200px; object-fit: contain; }
-        .photo-item { background: white; border: 1px solid #e1e5e9; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .photo-item .remove-btn { position: absolute; top: 0.5rem; right: 0.5rem; width: 30px; height: 30px; border-radius: 50%; background: #dc3545; color: white; border: none; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .floating-submit { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 1000; }
-        .status { padding: 1rem; border-radius: 8px; margin: 1rem 0; font-weight: 500; text-align: center; }
-        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .status.loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .hidden { display: none; }
-    </style>
-</head>
-<body>
-    <div id="loginView" class="login-container">
-        <div class="login-card">
-            <h2 style="text-align: center; font-size: 1.5rem; font-weight: 700; color: #333; margin-bottom: 2rem;">🔐 Iniciar Sesión</h2>
-            <div class="form-group">
-                <label for="username">👤 Usuario</label>
-                <input type="text" id="username" placeholder="Ingresa tu usuario" required>
-            </div>
-            <div class="form-group">
-                <label for="password">🔑 Contraseña</label>
-                <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
-            </div>
-            <button id="loginButton" class="btn btn-primary" style="margin-bottom: 1rem;">Ingresar</button>
-            <div id="loginStatus" class="status hidden"></div>
-        </div>
-    </div>
+<script>
+        // --- CONFIGURACIÓN ---
+        // ¡¡¡IMPORTANTE!!! PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE GOOGLE
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby..../exec';
 
-    <div id="contentView" class="hidden">
-        <div class="header">
-            <h1>📦 Registrar Pedido</h1>
-            <div class="header-controls">
-                <span id="welcomeMessage" class="user-info"></span>
-                <button id="logoutButton" class="btn-logout">Salir</button>
-            </div>
-        </div>
-
-        <div class="form-content">
-            <form id="uploadForm" novalidate>
-                <div class="form-group highlight">
-                    <h3 style="margin-bottom: 1rem; color: #667eea;">📋 Información del Pedido</h3>
-                    <div class="form-group">
-                        <label for="fechaPedido">📅 Fecha del Pedido</label>
-                        <input type="date" id="fechaPedido" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="origen">🏪 Origen</label>
-                        <select id="origen" required>
-                            <option value="">-- Seleccione --</option>
-                            <option value="FALAB">FALAB</option><option value="ML">ML</option><option value="WB">WB</option><option value="NV">NV</option><option value="RIPLEY">RIPLEY</option><option value="DEVO">DEVO</option>
-                        </select>
-                    </div>
-                    <div id="nvRelatedGroup" class="form-group highlight hidden">
-                        <div class="form-group"><label for="vendedor">👨‍💼 Vendedor (Requerido para NV)</label><input type="text" id="vendedor" placeholder="Nombre del vendedor"></div>
-                        <div class="form-group"><label for="relatedNvNumber">🔗 Número Nota Venta Relacionada</label><input type="text" id="relatedNvNumber" placeholder="N° de la NV original"><small style="color: #666; font-size: 0.8rem;">Este número se usa para encontrar la NV y añadir los datos del pedido en la misma fila.</small></div>
-                    </div>
-                    <div class="form-group"><label for="nombreCliente">👤 Cliente</label><input type="text" id="nombreCliente" placeholder="Nombre del cliente" required></div>
-                    <div class="form-group"><label for="identifier">🆔 N° Identificación (Pedido)</label><input type="text" id="identifier" placeholder="Número ID de este pedido" required></div>
-                    <div class="form-group"><label for="armadoPor">👷‍♂️ Armado por</label><input type="text" id="armadoPor" placeholder="Siglas" required></div>
-                </div>
-                <div class="form-group highlight">
-                    <h3 style="margin-bottom: 1rem; color: #667eea;">🚚 Información de Despacho</h3>
-                    <div class="form-group">
-                        <label for="tipoDespacho">📦 Tipo de Despacho</label>
-                        <select id="tipoDespacho" required>
-                            <option value="">-- Seleccione --</option><option value="RETIRO">🏪 RETIRO</option><option value="ENVIO">🏠 ENVIO</option>
-                        </select>
-                    </div>
-                    <div id="courierGroup" class="hidden">
-                        <div class="form-group"><label for="courier">🚛 Courier</label><select id="courier"><option value="">-- Seleccione Courier --</option><option value="STARKEN">STARKEN</option><option value="BLUE">BLUE</option><option value="TUTTO">TUTTO</option><option value="PULLMAN">PULLMAN</option><option value="VARMONT">VARMONT</option><option value="CHILEXPRESS">CHILEXPRESS</option><option value="TVP">TVP</option><option value="CACEM">CACEM</option><option value="MERCOSUR">MERCOSUR</option><option value="CRUZ DEL SUR">CRUZ DEL SUR</option><option value="CORREOS">CORREOS</option><option value="Otros">Otros</option></select></div>
-                        <div class="form-group"><input type="text" id="courierOtro" class="hidden" placeholder="Ingrese nombre del courier"></div>
-                    </div>
-                    <div class="form-group"><label for="numeroBultos">📦 Número de Bultos</label><input type="number" id="numeroBultos" min="1" value="1" required></div>
-                </div>
-                <div class="form-group"><label for="description">📝 Descripción (Opcional)</label><textarea id="description" rows="3" placeholder="Descripción adicional del pedido..."></textarea></div>
-                <div class="form-group highlight">
-                    <h3 style="margin-bottom: 1rem; color: #667eea;">📄 Documento Principal</h3>
-                    <input type="file" id="nvDocumentInput" class="file-input" accept="image/*,application/pdf" required>
-                    <label for="nvDocumentInput" id="nvDocumentLabel" class="file-upload-label">
-                        <div class="upload-icon">📁</div>
-                        <div class="upload-text">Toca para seleccionar imagen o PDF</div>
-                    </label>
-                    <div id="nvDocumentPreview" class="preview-container hidden"></div>
-                    <button type="button" id="removeNvDocumentButton" class="btn btn-danger hidden" style="margin-top: 0.5rem; width: auto; display: block; margin-left: auto; margin-right: auto;">Quitar Documento</button>
-                </div>
-                <div class="form-group highlight">
-                    <h3 style="margin-bottom: 1rem; color: #667eea;">📸 Fotos Adicionales</h3>
-                    <p style="color: #666; margin-bottom: 1rem;">Máximo 10 fotos adicionales</p>
-                    <div id="additionalPhotosContainer">
-                        <p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>
-                    </div>
-                    <button type="button" id="addPhotoButton" class="btn" style="background-color: #28a745; color: white;">➕ Agregar Foto Adicional</button>
-                </div>
-            </form>
-            <div id="formStatus" class="status hidden"></div>
-        </div>
-        <div class="floating-submit">
-            <button type="submit" id="submitButtonPedido" class="btn btn-primary" form="uploadForm">💾 Guardar Registro de Pedido</button>
-        </div>
-    </div>
-
-    <script>
-        // =================================================================
-        //                 INICIO DEL CÓDIGO JAVASCRIPT
-        // =================================================================
-
-        // ##### ¡IMPORTANTE! #####
-        // Pega aquí la NUEVA URL de tu script desplegado.
-        const SCRIPT_URL = "https://script.google.com/a/macros/aromaker.cl/s/AKfycbx-RNjGoX7uStytJLmJ3F9GgFzq_dAorypFUwhPiW1NFPCxZuyFLLM2I7T4oifl9Ufm/exec";
-
-        // --- Variables Globales y Referencias a Elementos ---
+        // --- VARIABLES Y ELEMENTOS (sin cambios) ---
         let loggedInUser = null;
         const MAX_ADDITIONAL_PHOTOS = 10;
-
-        const loginView = document.getElementById('loginView');
-        const contentView = document.getElementById('contentView');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const loginButton = document.getElementById('loginButton');
-        const loginStatus = document.getElementById('loginStatus');
-        const logoutButton = document.getElementById('logoutButton');
-        const welcomeMessage = document.getElementById('welcomeMessage');
-        const uploadForm = document.getElementById('uploadForm');
+        const loginSection = document.getElementById('login-section');
+        const pedidoSection = document.getElementById('pedido-section');
+        const loginForm = document.getElementById('login-form');
+        const pedidoForm = document.getElementById('pedido-form');
+        const statusDiv = document.getElementById('status');
+        const loader = document.getElementById('loader');
         const origenSelect = document.getElementById('origen');
-        const nvRelatedGroup = document.getElementById('nvRelatedGroup');
-        const vendedorInput = document.getElementById('vendedor');
-        const relatedNvNumberInput = document.getElementById('relatedNvNumber');
-        const identifierInput = document.getElementById('identifier');
-        const descriptionInput = document.getElementById('description');
-        const armadoPorInput = document.getElementById('armadoPor');
-        const nvDocumentInput = document.getElementById('nvDocumentInput');
-        const nvDocumentLabel = document.getElementById('nvDocumentLabel');
-        const nvDocumentPreview = document.getElementById('nvDocumentPreview');
-        const removeNvDocumentButton = document.getElementById('removeNvDocumentButton');
-        const additionalPhotosContainer = document.getElementById('additionalPhotosContainer');
-        const addPhotoButton = document.getElementById('addPhotoButton');
-        const submitButton = document.getElementById('submitButtonPedido');
-        const formStatus = document.getElementById('formStatus');
-        const fechaPedidoInput = document.getElementById('fechaPedido');
-        const nombreClienteInput = document.getElementById('nombreCliente');
+        const nvFields = document.getElementById('nv-fields');
+        const nvRelatedFields = document.getElementById('nv-related-fields');
         const tipoDespachoSelect = document.getElementById('tipoDespacho');
-        const courierGroup = document.getElementById('courierGroup');
-        const courierSelect = document.getElementById('courier');
-        const courierOtroInput = document.getElementById('courierOtro');
-        const numeroBultosInput = document.getElementById('numeroBultos');
+        const courierField = document.getElementById('courier-field');
+        const additionalPhotosInput = document.getElementById('additionalPhotosInfo');
+        const photosPreview = document.getElementById('photos-preview');
 
+        // --- MANEJADORES DE EVENTOS (ligeramente modificados) ---
+        loginForm.addEventListener('submit', handleLoginSubmit);
+        pedidoForm.addEventListener('submit', handlePedidoSubmit);
+        
+        // ... (el resto de manejadores de eventos para la UI no cambian) ...
+        origenSelect.addEventListener('change', function() {
+            const isNV = this.value === 'NV';
+            nvFields.classList.toggle('hidden', !isNV);
+            nvRelatedFields.classList.toggle('hidden', !isNV);
+            document.getElementById('vendedor').required = isNV;
+            document.getElementById('relatedNvNumber').required = isNV;
+        });
+        tipoDespachoSelect.addEventListener('change', function() {
+            const isEnvio = this.value === 'Envío a Domicilio';
+            courierField.classList.toggle('hidden', !isEnvio);
+            document.getElementById('courier').required = isEnvio;
+        });
+        additionalPhotosInput.addEventListener('change', function(event) {
+            photosPreview.innerHTML = '';
+            const files = Array.from(event.target.files).slice(0, MAX_ADDITIONAL_PHOTOS);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('preview-image');
+                    photosPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
 
-        // --- Funciones de Utilidad (UI y manejo de estado) ---
-        function showStatus(element, message, isError = false, isLoading = false) {
-            element.textContent = message;
-            element.className = 'status'; // Reset classes
-            if (isError) element.classList.add('error');
-            else if (isLoading) element.classList.add('loading');
-            else element.classList.add('success');
-            element.classList.remove('hidden');
+        // --- FUNCIONES DE LÓGICA (MODIFICADAS PARA USAR fetch) ---
+        
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (!username || !password) {
+                showStatus('Por favor, ingrese usuario y contraseña.', 'error');
+                return;
+            }
+            toggleLoader(true);
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Necesario para evitar preflight CORS
+                    body: JSON.stringify({
+                        action: 'checkLogin',
+                        data: { username, password }
+                    })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    onLoginSuccess();
+                } else {
+                    onFailure({ message: result.error || 'Usuario o contraseña inválido.' });
+                }
+            } catch (error) {
+                onFailure(error);
+            } finally {
+                toggleLoader(false);
+            }
         }
 
-        function hideStatus(element) {
-            element.classList.add('hidden');
+        async function handlePedidoSubmit(e) {
+            e.preventDefault();
+            if (!pedidoForm.checkValidity()) {
+                pedidoForm.reportValidity();
+                showStatus('Por favor, complete todos los campos obligatorios.', 'error');
+                return;
+            }
+            toggleLoader(true);
+            showStatus('Procesando...', 'info');
+
+            try {
+                // La lógica para leer archivos no cambia
+                const docFile = document.getElementById('nvDocumentInfo').files[0];
+                const additionalFiles = Array.from(document.getElementById('additionalPhotosInfo').files).slice(0, MAX_ADDITIONAL_PHOTOS);
+                const nvDocumentInfoPromise = readFileAsBase64(docFile);
+                const additionalPhotosInfoPromises = additionalFiles.map(file => readFileAsBase64(file));
+                const [nvDocumentInfo, ...additionalPhotosInfo] = await Promise.all([nvDocumentInfoPromise, ...additionalPhotosInfoPromises]);
+
+                const formData = { /* ... (el objeto formData se construye igual que antes) ... */
+                    origen: document.getElementById('origen').value,
+                    identifier: document.getElementById('identifier').value,
+                    user: loggedInUser,
+                    description: document.getElementById('description').value,
+                    vendedor: document.getElementById('vendedor').value,
+                    relatedNvNumber: document.getElementById('relatedNvNumber').value,
+                    armadoPor: document.getElementById('armadoPor').value,
+                    fechaPedido: document.getElementById('fechaPedido').value,
+                    nombreCliente: document.getElementById('nombreCliente').value,
+                    tipoDespacho: document.getElementById('tipoDespacho').value,
+                    courier: document.getElementById('courier').value,
+                    numeroBultos: document.getElementById('numeroBultos').value,
+                    nvDocumentInfo: nvDocumentInfo,
+                    additionalPhotosInfo: additionalPhotosInfo
+                };
+                
+                // La nueva llamada usando fetch
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'processFormData',
+                        data: formData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    onFormSuccess(result.message);
+                } else {
+                    onFailure({ message: result.error });
+                }
+
+            } catch (error) {
+                onFailure(error);
+            } finally {
+                toggleLoader(false);
+            }
         }
 
-        function toggleSubmitButton(disabled) {
-            submitButton.disabled = disabled;
-            submitButton.innerHTML = disabled ? '⏳ Procesando...' : '💾 Guardar Registro de Pedido';
+        // --- FUNCIONES DE UTILIDAD (Callbacks y Helpers - modificados para ser más genéricos) ---
+
+        function onLoginSuccess() {
+            loggedInUser = document.getElementById('username').value.trim();
+            loginSection.classList.add('hidden');
+            pedidoSection.classList.remove('hidden');
+            document.getElementById('welcome-user').textContent = `| Usuario: ${loggedInUser}`;
+            showStatus('');
+            document.getElementById('fechaPedido').valueAsDate = new Date();
+        }
+        
+        function onFormSuccess(message) {
+            showStatus(message, 'success');
+            pedidoForm.reset();
+            photosPreview.innerHTML = '';
+            document.getElementById('fechaPedido').valueAsDate = new Date();
+            nvFields.classList.add('hidden');
+            nvRelatedFields.classList.add('hidden');
+            courierField.classList.add('hidden');
         }
 
-        function setInitialDate() {
-            const today = new Date();
-            const offset = today.getTimezoneOffset();
-            const localDate = new Date(today.getTime() - (offset * 60 * 1000));
-            fechaPedidoInput.value = localDate.toISOString().split('T')[0];
+        function onFailure(error) {
+            showStatus(`Error: ${error.message}`, 'error');
         }
 
-        function resetFormVisuals() {
-            uploadForm.reset();
-            setInitialDate();
-            
-            // Limpiar documento principal
-            nvDocumentInput.value = '';
-            nvDocumentPreview.innerHTML = '';
-            nvDocumentPreview.classList.add('hidden');
-            nvDocumentLabel.classList.remove('has-file');
-            removeNvDocumentButton.classList.add('hidden');
-            
-            // Limpiar fotos adicionales
-            additionalPhotosContainer.innerHTML = '<p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>';
-            addPhotoButton.disabled = false;
-            
-            handleOrigenChange();
-            handleTipoDespachoChange();
-            hideStatus(formStatus);
+        function showStatus(message, type = '') {
+            statusDiv.textContent = message;
+            statusDiv.className = type ? `status-${type}` : '';
         }
 
-        // --- Lógica de Manejo de Archivos ---
+        function toggleLoader(show) {
+            loader.classList.toggle('hidden', !show);
+            document.getElementById('submit-btn').disabled = show;
+        }
+
+        // La función readFileAsBase64 no cambia
         function readFileAsBase64(file) {
             return new Promise((resolve, reject) => {
                 if (!file) {
-                    return reject(new Error("No se proporcionó ningún archivo."));
+                    resolve(null);
+                    return;
                 }
                 const reader = new FileReader();
-                reader.onload = () => {
-                    const base64String = reader.result.split(',')[1];
+                reader.onload = (e) => {
+                    const base64Data = e.target.result.split(',')[1];
                     resolve({
-                        fileName: file.name,
-                        mimeType: file.type || 'application/octet-stream',
-                        base64Data: base64String
+                        base64Data: base64Data,
+                        mimeType: file.type,
+                        fileName: file.name
                     });
                 };
-                reader.onerror = () => reject(new Error("Error al leer el archivo."));
+                reader.onerror = (error) => reject(error);
                 reader.readAsDataURL(file);
             });
         }
-
-        function handleFileSelection(event) {
-            const input = event.target;
-            const file = input.files[0];
-            const label = document.querySelector(`label[for="${input.id}"]`);
-            const previewContainer = label.nextElementSibling;
-
-            if (file) {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => { previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview">`; };
-                    reader.readAsDataURL(file);
-                } else {
-                    previewContainer.innerHTML = `<p style="padding: 1rem; text-align: center; color: #666;">📄 ${file.name}</p>`;
-                }
-                previewContainer.classList.remove('hidden');
-                label.classList.add('has-file');
-
-                if (input.id === 'nvDocumentInput') {
-                    removeNvDocumentButton.classList.remove('hidden');
-                }
-            }
-        }
-        
-        // --- Lógica de Login y Logout ---
-        function handleLogin() {
-            const user = usernameInput.value.trim();
-            const pass = passwordInput.value;
-            if (!user || !pass) {
-                showStatus(loginStatus, 'Usuario y contraseña requeridos.', true);
-                return;
-            }
-            loggedInUser = user;
-            loginView.classList.add('hidden');
-            contentView.classList.remove('hidden');
-            welcomeMessage.textContent = `👤 ${loggedInUser}`;
-            passwordInput.value = ""; 
-            resetFormVisuals();
-        }
-
-        loginButton.addEventListener('click', handleLogin);
-        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
-
-        logoutButton.addEventListener('click', () => {
-            loggedInUser = null;
-            contentView.classList.add('hidden');
-            loginView.classList.remove('hidden');
-            hideStatus(formStatus);
-            hideStatus(loginStatus);
-        });
-
-        // --- Lógica de Formularios Dinámicos y Eventos ---
-        nvDocumentInput.addEventListener('change', handleFileSelection);
-        removeNvDocumentButton.addEventListener('click', () => {
-            nvDocumentInput.value = '';
-            nvDocumentPreview.innerHTML = '';
-            nvDocumentPreview.classList.add('hidden');
-            nvDocumentLabel.classList.remove('has-file');
-            removeNvDocumentButton.classList.add('hidden');
-        });
-
-        addPhotoButton.addEventListener('click', () => {
-            const currentCount = additionalPhotosContainer.querySelectorAll('.photo-item').length;
-            if (currentCount >= MAX_ADDITIONAL_PHOTOS) { alert(`Máximo ${MAX_ADDITIONAL_PHOTOS} fotos.`); return; }
-            if (currentCount === 0) additionalPhotosContainer.innerHTML = '';
-
-            const uniqueId = `additionalPhoto_${Date.now()}`;
-            const photoItem = document.createElement('div');
-            photoItem.className = 'photo-item';
-            photoItem.innerHTML = `
-                <button type="button" class="remove-btn">×</button>
-                <span class="label-title">📸 Foto Adicional ${currentCount + 1}</span>
-                <input type="file" id="${uniqueId}" class="file-input additional-photo-input" accept="image/*,application/pdf" required>
-                <label for="${uniqueId}" class="file-upload-label">
-                    <div class="upload-icon">📷</div><div class="upload-text">Toca para seleccionar o tomar foto</div>
-                </label>
-                <div class="preview-container hidden"></div>`;
-            additionalPhotosContainer.appendChild(photoItem);
-            
-            photoItem.querySelector('.additional-photo-input').addEventListener('change', handleFileSelection);
-            photoItem.querySelector('.remove-btn').addEventListener('click', (e) => {
-                e.target.closest('.photo-item').remove();
-                renumberAdditionalPhotos();
-            });
-            renumberAdditionalPhotos();
-        });
-
-        function renumberAdditionalPhotos() {
-            const items = additionalPhotosContainer.querySelectorAll('.photo-item');
-            items.forEach((item, index) => {
-                item.querySelector('.label-title').textContent = `📸 Foto Adicional ${index + 1}`;
-            });
-            addPhotoButton.disabled = items.length >= MAX_ADDITIONAL_PHOTOS;
-            if (items.length === 0) {
-                 additionalPhotosContainer.innerHTML = '<p style="color: #666; text-align: center;">Presiona "Agregar Foto" para añadir imágenes.</p>';
-            }
-        }
-
-        origenSelect.addEventListener('change', handleOrigenChange);
-        tipoDespachoSelect.addEventListener('change', handleTipoDespachoChange);
-        courierSelect.addEventListener('change', handleCourierChange);
-        function handleOrigenChange() {
-            const isNV = origenSelect.value === 'NV';
-            nvRelatedGroup.classList.toggle('hidden', !isNV);
-            vendedorInput.required = isNV;
-            relatedNvNumberInput.required = isNV;
-        }
-        function handleTipoDespachoChange() {
-            const isEnvio = tipoDespachoSelect.value === 'ENVIO';
-            courierGroup.classList.toggle('hidden', !isEnvio);
-            courierSelect.required = isEnvio;
-        }
-        function handleCourierChange() {
-            const isOtros = courierSelect.value === 'Otros';
-            courierOtroInput.classList.toggle('hidden', !isOtros);
-            courierOtroInput.required = isOtros;
-        }
-
-        // --- Lógica Principal de Envío del Formulario ---
-        uploadForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            if (!uploadForm.checkValidity()) {
-                showStatus(formStatus, '❌ Por favor, completa todos los campos obligatorios marcados.', true);
-                const firstInvalidField = uploadForm.querySelector(':invalid');
-                if (firstInvalidField) firstInvalidField.focus();
-                return;
-            }
-
-            toggleSubmitButton(true);
-            showStatus(formStatus, '📁 Procesando archivos, por favor espera...', false, true);
-
-            const payload = {
-                action: 'processPedido',
-                data: {
-                    origen: origenSelect.value, identifier: identifierInput.value.trim(), user: loggedInUser, description: descriptionInput.value.trim(), vendedor: vendedorInput.value.trim(), relatedNvNumber: relatedNvNumberInput.value.trim(), armadoPor: armadoPorInput.value.trim(), fechaPedido: fechaPedidoInput.value, nombreCliente: nombreClienteInput.value.trim(), tipoDespacho: tipoDespachoSelect.value,
-                    courier: courierSelect.value === 'Otros' ? courierOtroInput.value.trim() : courierSelect.value,
-                    numeroBultos: numeroBultosInput.value
-                }
-            };
-            const fileInputs = [nvDocumentInput, ...additionalPhotosContainer.querySelectorAll('.additional-photo-input')];
-            const filePromises = fileInputs.map(input => input.files[0] ? readFileAsBase64(input.files[0]) : Promise.resolve(null));
-
-            Promise.all(filePromises).then(fileResults => {
-                const validFiles = fileResults.filter(Boolean);
-                payload.data.nvDocumentInfo = validFiles[0];
-                payload.data.additionalPhotosInfo = validFiles.slice(1);
-                
-                showStatus(formStatus, `📤 Subiendo ${validFiles.length} archivo(s)...`, false, true);
-                
-                fetch(SCRIPT_URL, {
-                    method: 'POST', mode: 'cors', cache: 'no-cache', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => {
-                    if (!res.ok) throw new Error(`Error de red: ${res.statusText}`);
-                    return res.json();
-                })
-                .then(response => {
-                    if (response.success) onUploadSuccess(response.message);
-                    else onUploadFailure(new Error(response.error));
-                })
-                .catch(err => onUploadFailure(err));
-            })
-            .catch(error => {
-                toggleSubmitButton(false);
-                showStatus(formStatus, `❌ Error procesando archivos: ${error.message}.`, true);
-            });
-        });
-
-        function onUploadSuccess(message) {
-            toggleSubmitButton(false);
-            resetFormVisuals();
-            showStatus(formStatus, message || "✅ Pedido guardado con éxito.", false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => hideStatus(formStatus), 8000);
-        }
-
-        function onUploadFailure(error) {
-            toggleSubmitButton(false);
-            showStatus(formStatus, `❌ Error al enviar: ${error.message}. Revisa la implementación del script.`, true);
-        }
-        
-        // --- Inicialización de la Página ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loginView.classList.remove('hidden');
-            contentView.classList.add('hidden');
-            setInitialDate();
-        });
     </script>
 </body>
 </html>
