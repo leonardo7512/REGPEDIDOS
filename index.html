@@ -201,7 +201,24 @@
 
         async function handlePedidoSubmit(e) {
             e.preventDefault();
-            if (!pedidoForm.checkValidity()) { pedidoForm.reportValidity(); showStatus('Por favor, complete todos los campos obligatorios.', 'error'); return; }
+            if (!pedidoForm.checkValidity()) {
+                pedidoForm.reportValidity();
+                showStatus('Por favor, complete todos los campos obligatorios.', 'error');
+                return;
+            }
+
+            // --- INICIO DE LA MODIFICACIÓN ---
+            const origenValue = document.getElementById('origen').value;
+            const identifierValue = document.getElementById('identifier').value.trim();
+            const relatedNvNumberValue = document.getElementById('relatedNvNumber').value.trim();
+
+            if (origenValue === 'NV' && identifierValue !== relatedNvNumberValue) {
+                showStatus('Error: Para Nota de Venta, el "N° Pedido" y el "N° NV Relacionada" deben ser idénticos.', 'error');
+                document.getElementById('relatedNvNumber').focus(); // Opcional: enfoca el campo para corregir
+                return; // Detiene el envío del formulario
+            }
+            // --- FIN DE LA MODIFICACIÓN ---
+
             toggleLoader(true, 'loading');
             updateProgress(0, 'Validando pedido...');
             try {
