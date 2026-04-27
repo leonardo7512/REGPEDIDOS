@@ -3,556 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrar Pedido v2.8</title>
+    <title>Registrar Pedido</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root { --primary-color: #007bff; --secondary-color: #6c757d; --success-color: #28a745; --danger-color: #dc3545; --light-gray: #f8f9fa; --dark-gray: #343a40; --border-color: #ced4da; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--light-gray); color: var(--dark-gray); margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 700px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        h2 { text-align: center; color: var(--primary-color); margin-bottom: 20px; font-size: 1.8em; }
-        .form-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
-        @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } .full-width { grid-column: 1 / -1; } }
+        :root { --primary: #007bff; --danger: #dc3545; --gray: #6c757d; --border: #ced4da; --light: #f8f9fa; --dark: #343a40; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--light); color: var(--dark); padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 700px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); height: fit-content; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 20px; font-size: 1.6em; }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media(min-width:600px){ .form-grid { grid-template-columns: 1fr 1fr; } .full { grid-column: 1/-1; } }
         .form-group { display: flex; flex-direction: column; }
-        label { font-weight: 600; margin-bottom: 5px; font-size: 0.9em; color: var(--dark-gray); }
-        label small { font-weight: normal; color: var(--secondary-color); }
-        input[type="text"], input[type="date"], input[type="number"], input[type="file"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; background-color: white; }
-        input[type="file"] { padding: 8px; }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); outline: none; }
+        label { font-weight: 600; margin-bottom: 5px; font-size: 0.9em; }
+        label small { font-weight: normal; color: var(--gray); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 1em; font-family: inherit; background: white; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.2); }
         textarea { resize: vertical; min-height: 80px; }
-        .btn { padding: 12px 20px; font-size: 1em; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; width: 100%; transition: background-color 0.2s, transform 0.1s; text-align: center; display: inline-block; }
-        .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .btn-primary:disabled { background-color: var(--secondary-color); cursor: not-allowed; }
-        .btn:active:not(:disabled) { transform: scale(0.98); }
-        .hidden { display: none !important; }
-        #status { margin-top: 20px; padding: 12px; border-radius: 5px; text-align: center; font-weight: 500; }
-        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .status-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        .loader { border: 6px solid #f3f3f3; border-top: 6px solid var(--primary-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .progress-container { width: 300px; margin-top: 20px; text-align: center; }
-        .progress-bar { width: 100%; height: 20px; background-color: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        .progress-fill { height: 100%; background-color: var(--primary-color); transition: width 0.3s ease; border-radius: 10px; }
-        .progress-text { font-size: 0.9em; color: var(--dark-gray); margin-top: 5px; }
-        .file-preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .preview-container { position: relative; display: inline-block; }
-        .preview-image { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; transition: transform 0.2s; }
-        .preview-container:hover .preview-image { transform: scale(1.05); border-color: var(--primary-color); }
-        .preview-container.single-preview .preview-image { width: 100px; height: 100px; }
-        .delete-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; background-color: var(--danger-color); color: white; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; line-height: 1; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .delete-btn:hover { background-color: #c82333; transform: scale(1.1); }
-        select { appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 20px; padding-right: 40px; }
-        #otros-courier-field { margin-top: 10px; }
+        select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 18px; padding-right: 36px; }
+        .btn { padding: 12px; font-size: 1em; font-weight: 600; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:disabled { background: var(--gray); cursor: not-allowed; }
+        .btn-file { padding: 8px 14px; font-size: 0.9em; font-weight: 500; border: 1px solid var(--primary); border-radius: 4px; cursor: pointer; background: white; color: var(--primary); display: inline-flex; align-items: center; gap: 6px; }
+        .btn-file:hover { background: var(--primary); color: white; }
+        .btn-file svg { width: 17px; height: 17px; }
         .file-input-group { display: flex; gap: 10px; margin-top: 8px; }
-        .btn-file { padding: 8px 16px; font-size: 0.9em; font-weight: 500; border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; background-color: white; color: var(--primary-color); transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-        .btn-file:hover { background-color: var(--primary-color); color: white; }
-        .btn-file svg { width: 18px; height: 18px; }
-        input[type="file"].hidden-file-input { position: absolute; left: -9999px; visibility: hidden; }
-        .file-name { margin-top: 8px; font-size: 0.85em; color: var(--secondary-color); }
-        .clear-all-btn { padding: 6px 12px; font-size: 0.85em; font-weight: 500; border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; background-color: white; color: var(--danger-color); transition: all 0.2s; margin-top: 8px; }
-        .clear-all-btn:hover { background-color: var(--danger-color); color: white; }
-        #error-display { text-align: center; padding: 20px; }
-        .error-icon { font-size: 48px; color: var(--danger-color); margin-bottom: 15px; }
-        #error-message { font-size: 1.1em; color: var(--dark-gray); margin-bottom: 25px; max-width: 400px; line-height: 1.5; }
-        #close-error-btn { width: auto; min-width: 120px; background-color: var(--secondary-color); color: white; }
-        #close-error-btn:hover { background-color: var(--dark-gray); }
+        input[type="file"].hidden-input { position: absolute; left: -9999px; visibility: hidden; }
+        .file-name { margin-top: 6px; font-size: 0.82em; color: var(--gray); }
+        .file-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .preview-wrap { position: relative; display: inline-block; }
+        .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid var(--border); }
+        .preview-wrap.big .preview-img { width: 90px; height: 90px; }
+        .del-btn { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px; border-radius: 50%; background: var(--danger); color: white; border: 2px solid white; cursor: pointer; font-size: 13px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .clear-btn { padding: 5px 10px; font-size: 0.82em; border: 1px solid var(--danger); border-radius: 4px; cursor: pointer; background: white; color: var(--danger); margin-top: 6px; }
+        .hidden { display: none !important; }
+        #status { margin-top: 18px; padding: 12px; border-radius: 5px; text-align: center; font-weight: 500; }
+        .s-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .s-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.92); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .spinner { border: 6px solid #eee; border-top: 6px solid var(--primary); border-radius: 50%; width: 48px; height: 48px; animation: spin 0.9s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .progress-box { width: 280px; margin-top: 18px; text-align: center; }
+        .progress-bar { width: 100%; height: 18px; background: #eee; border-radius: 9px; overflow: hidden; margin: 8px 0; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 9px; transition: width 0.3s; }
+        .progress-txt { font-size: 0.88em; }
+        .err-box { text-align: center; padding: 24px; }
+        .err-icon { font-size: 46px; margin-bottom: 12px; }
+        .err-msg { font-size: 1.05em; margin-bottom: 22px; line-height: 1.5; max-width: 380px; }
+        .btn-close { width: auto; min-width: 110px; padding: 10px 20px; background: var(--gray); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: 600; }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <div id="pedido-section">
-            <h2>Registrar Pedido</h2>
-            <form id="pedido-form">
-                <div class="form-grid">
-                    <div class="form-group"><label for="executingUser">Su Nombre / Usuario</label><input type="text" id="executingUser" name="executingUser" required></div>
-                    <div class="form-group"><label for="identifier">N° Pedido / ID Venta</label><input type="text" id="identifier" name="identifier" required></div>
-                    <div class="form-group">
-                        <label for="origen">Origen del Pedido</label>
-                        <select id="origen" name="origen" required>
-                            <option value="">Seleccione...</option>
-                            <option value="FALAB">FALABELLA</option>
-                            <option value="ML">MERCADO LIBRE</option>
-                            <option value="WB">WEB</option>
-                            <option value="NV">NOTA DE VENTA</option>
-                            <option value="RIPLEY">RIPLEY</option>
-                            <option value="LIDER">LIDER</option>
-                            <option value="DEVO">DEVOLUCIÓN</option>
-                        </select>
-                    </div>
-                    <div id="nv-fields" class="form-group hidden"><label for="vendedor">Vendedor (si origen es NV)</label><input type="text" id="vendedor" name="vendedor"></div>
-                    <div id="nv-related-fields" class="form-group hidden"><label for="relatedNvNumber">N° NV Relacionada</label><input type="text" id="relatedNvNumber" name="relatedNvNumber"></div>
-                    <div class="form-group"><label for="fechaPedido">Fecha del Pedido</label><input type="date" id="fechaPedido" name="fechaPedido" required></div>
-                    <div class="form-group"><label for="nombreCliente">Nombre del Cliente</label><input type="text" id="nombreCliente" name="nombreCliente" required></div>
-                    <div class="form-group"><label for="armadoPor">Armado Por</label><input type="text" id="armadoPor" name="armadoPor" required></div>
-                    <div class="form-group">
-                        <label for="tipoDespacho">Tipo de Despacho</label>
-                        <select id="tipoDespacho" name="tipoDespacho" required>
-                            <option value="">Seleccione...</option>
-                            <option value="Retiro">Retiro</option>
-                            <option value="Envío">Envío</option>
-                        </select>
-                    </div>
-                    <div id="courier-field" class="form-group hidden">
-                        <label for="courier">Courier</label>
-                        <select id="courier" name="courier">
-                            <option value="">Seleccione...</option>
-                            <option value="BLUE">BLUE</option>
-                            <option value="STARKEN">STARKEN</option>
-                            <option value="TUTTO PETS">TUTTO PETS</option>
-                            <option value="JM">JM</option>
-                            <option value="CA">CA</option>
-                            <option value="VARMONTT">VARMONTT</option>
-                            <option value="PULLMAN">PULLMAN</option>
-                            <option value="TVP">TVP</option>
-                            <option value="CACEM">CACEM</option>
-                            <option value="MERCOSUR">MERCOSUR</option>
-                            <option value="CORREOS DE CHILE">CORREOS DE CHILE</option>
-                            <option value="CRUZ DEL SUR">CRUZ DEL SUR</option>
-                            <option value="CHILEXPRESS">CHILEXPRESS</option>
-                            <option value="OTROS">OTROS</option>
-                        </select>
-                        <div id="otros-courier-field" class="hidden"><input type="text" id="otros-courier" name="otros-courier" placeholder="Especifique el courier"></div>
-                    </div>
-                    <div class="form-group"><label for="numeroBultos">N° de Bultos</label><input type="number" id="numeroBultos" name="numeroBultos" min="1" value="1" required></div>
-                    <div class="form-group full-width"><label for="description">Descripción / Observaciones</label><textarea id="description" name="description" rows="3"></textarea></div>
-
-                    <div class="form-group full-width">
-                        <label for="nvDocumentInfo">Imagen Principal (Boleta, Factura, etc.) <small>(1 archivo)</small></label>
-                        <div class="file-input-group">
-                            <button type="button" class="btn-file" onclick="document.getElementById('nvDocumentInfo').click();">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg> Galería
-                            </button>
-                            <button type="button" class="btn-file" onclick="document.getElementById('nvDocumentInfoCamera').click();">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Cámara
-                            </button>
-                        </div>
-                        <input type="file" id="nvDocumentInfo" name="nvDocumentInfo" accept="image/*" class="hidden-file-input" required>
-                        <input type="file" id="nvDocumentInfoCamera" name="nvDocumentInfoCamera" accept="image/*" capture="camera" class="hidden-file-input">
-                        <div id="doc-file-name" class="file-name"></div>
-                        <div id="doc-preview" class="file-preview"></div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="additionalPhotosInfo">Fotos Adicionales del Pedido <small>(máx. 10)</small></label>
-                        <div class="file-input-group">
-                            <button type="button" class="btn-file" onclick="document.getElementById('additionalPhotosInfo').click();">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg> Galería
-                            </button>
-                            <button type="button" class="btn-file" onclick="document.getElementById('additionalPhotosInfoCamera').click();">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Cámara
-                            </button>
-                        </div>
-                        <input type="file" id="additionalPhotosInfo" name="additionalPhotosInfo" accept="image/*" multiple class="hidden-file-input">
-                        <input type="file" id="additionalPhotosInfoCamera" name="additionalPhotosInfoCamera" accept="image/*" capture="camera" multiple class="hidden-file-input">
-                        <div id="photos-file-name" class="file-name"></div>
-                        <div id="photos-preview" class="file-preview"></div>
-                        <button type="button" id="clear-all-photos" class="clear-all-btn hidden" onclick="clearAllAdditionalPhotos()">Eliminar todas las fotos</button>
-                    </div>
-
-                    <div class="form-group full-width"><button type="submit" id="submit-btn" class="btn btn-primary">Guardar Pedido</button></div>
-                </div>
-            </form>
-        </div>
-        <div id="status"></div>
-    </div>
-
-    <div id="loader-overlay" class="loader-overlay hidden">
-        <div id="loading-display">
-            <div class="loader"></div>
-            <div class="progress-container">
-                <div class="progress-bar"><div id="progress-fill" class="progress-fill" style="width: 0%"></div></div>
-                <div id="progress-text" class="progress-text">Preparando...</div>
+<div class="container">
+    <h2>Registrar Pedido</h2>
+    <form id="form">
+        <div class="form-grid">
+            <div class="form-group"><label>Su Nombre / Usuario</label><input type="text" id="executingUser" required></div>
+            <div class="form-group"><label>N° Pedido / ID Venta</label><input type="text" id="identifier" required></div>
+            <div class="form-group">
+                <label>Origen</label>
+                <select id="origen" required>
+                    <option value="">Seleccione...</option>
+                    <option value="FALAB">FALABELLA</option>
+                    <option value="ML">MERCADO LIBRE</option>
+                    <option value="WB">WEB</option>
+                    <option value="NV">NOTA DE VENTA</option>
+                    <option value="RIPLEY">RIPLEY</option>
+                    <option value="LIDER">LIDER</option>
+                    <option value="DEVO">DEVOLUCIÓN</option>
+                </select>
             </div>
+            <div id="nv-vendedor" class="form-group hidden"><label>Vendedor <small>(NV)</small></label><input type="text" id="vendedor"></div>
+            <div id="nv-related" class="form-group hidden"><label>N° NV Relacionada</label><input type="text" id="relatedNvNumber"></div>
+            <div class="form-group"><label>Fecha del Pedido</label><input type="date" id="fechaPedido" required></div>
+            <div class="form-group"><label>Nombre del Cliente</label><input type="text" id="nombreCliente" required></div>
+            <div class="form-group"><label>Armado Por</label><input type="text" id="armadoPor" required></div>
+            <div class="form-group">
+                <label>Tipo de Despacho</label>
+                <select id="tipoDespacho" required>
+                    <option value="">Seleccione...</option>
+                    <option value="Retiro">Retiro</option>
+                    <option value="Envío">Envío</option>
+                </select>
+            </div>
+            <div id="courier-wrap" class="form-group hidden">
+                <label>Courier</label>
+                <select id="courier">
+                    <option value="">Seleccione...</option>
+                    <option value="BLUE">BLUE</option><option value="STARKEN">STARKEN</option>
+                    <option value="TUTTO PETS">TUTTO PETS</option><option value="JM">JM</option>
+                    <option value="CA">CA</option><option value="VARMONTT">VARMONTT</option>
+                    <option value="PULLMAN">PULLMAN</option><option value="TVP">TVP</option>
+                    <option value="CACEM">CACEM</option><option value="MERCOSUR">MERCOSUR</option>
+                    <option value="CORREOS DE CHILE">CORREOS DE CHILE</option>
+                    <option value="CRUZ DEL SUR">CRUZ DEL SUR</option>
+                    <option value="CHILEXPRESS">CHILEXPRESS</option>
+                    <option value="OTROS">OTROS</option>
+                </select>
+                <input type="text" id="courier-otro" class="hidden" placeholder="Especifique courier" style="margin-top:8px;">
+            </div>
+            <div class="form-group"><label>N° de Bultos</label><input type="number" id="numeroBultos" min="1" value="1" required></div>
+            <div class="form-group full"><label>Descripción / Observaciones</label><textarea id="description"></textarea></div>
+            <div class="form-group full">
+                <label>Imagen Principal <small>(boleta, factura, etc.)</small></label>
+                <div class="file-input-group">
+                    <button type="button" class="btn-file" onclick="document.getElementById('docGaleria').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
+                    <button type="button" class="btn-file" onclick="document.getElementById('docCamara').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
+                </div>
+                <input type="file" id="docGaleria" accept="image/*" class="hidden-input">
+                <input type="file" id="docCamara" accept="image/*" capture="camera" class="hidden-input">
+                <div id="doc-name" class="file-name"></div>
+                <div id="doc-preview" class="file-preview"></div>
+            </div>
+            <div class="form-group full">
+                <label>Fotos Adicionales <small>(máx. 10)</small></label>
+                <div class="file-input-group">
+                    <button type="button" class="btn-file" onclick="document.getElementById('fotosGaleria').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
+                    <button type="button" class="btn-file" onclick="document.getElementById('fotosCamara').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
+                </div>
+                <input type="file" id="fotosGaleria" accept="image/*" multiple class="hidden-input">
+                <input type="file" id="fotosCamara" accept="image/*" capture="camera" multiple class="hidden-input">
+                <div id="fotos-name" class="file-name"></div>
+                <div id="fotos-preview" class="file-preview"></div>
+                <button type="button" id="clear-fotos" class="clear-btn hidden" onclick="clearFotos()">Eliminar todas las fotos</button>
+            </div>
+            <div class="form-group full"><button type="submit" id="submit-btn" class="btn btn-primary">Guardar Pedido</button></div>
         </div>
-        <div id="error-display" class="hidden">
-            <div class="error-icon">❌</div>
-            <p id="error-message"></p>
-            <button id="close-error-btn" class="btn">Cerrar</button>
+    </form>
+    <div id="status"></div>
+</div>
+
+<div id="overlay" class="overlay hidden">
+    <div id="loading-box">
+        <div class="spinner"></div>
+        <div class="progress-box">
+            <div class="progress-bar"><div id="prog-fill" class="progress-fill" style="width:0%"></div></div>
+            <div id="prog-txt" class="progress-txt">Preparando...</div>
         </div>
     </div>
+    <div id="error-box" class="err-box hidden">
+        <div class="err-icon">❌</div>
+        <p id="err-msg" class="err-msg"></p>
+        <button class="btn-close" onclick="closeOverlay()">Cerrar</button>
+    </div>
+</div>
 
-    <script>
-        // =============================================
-        // CONFIGURACIÓN - SOLO CAMBIAR ESTA URL
-        // =============================================
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyULsEsXU9iog9xpO2WJlHpVxlPjHnuaF-UpSuXglJaxWwPgypMGjVlfCkWvNVHrgpGdw/exec';
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyULsEsXU9iog9xpO2WJlHpVxlPjHnuaF-UpSuXglJaxWwPgypMGjVlfCkWvNVHrgpGdw/exec';
 
-        // =============================================
-        // FUNCIÓN CENTRAL DE FETCH - CORREGIDA CORS
-        // =============================================
-        async function fetchGAS(payload) {
-            const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload),
-                redirect: 'follow'
-            });
-            if (!response.ok) {
-                throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
+async function callGAS(payload) {
+    const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        redirect: 'follow'
+    });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (m) return JSON.parse(m[0]);
+        throw new Error('Respuesta inválida del servidor: ' + text.substring(0,100));
+    }
+}
+
+let docFile = null, fotosArr = [], fotoIdCnt = 0;
+
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
+});
+
+document.getElementById('origen').addEventListener('change', function() {
+    const isNV = this.value === 'NV';
+    document.getElementById('nv-vendedor').classList.toggle('hidden', !isNV);
+    document.getElementById('nv-related').classList.toggle('hidden', !isNV);
+    document.getElementById('vendedor').required = isNV;
+    document.getElementById('relatedNvNumber').required = isNV;
+});
+document.getElementById('tipoDespacho').addEventListener('change', function() {
+    const isE = this.value === 'Envío';
+    document.getElementById('courier-wrap').classList.toggle('hidden', !isE);
+    document.getElementById('courier').required = isE;
+});
+document.getElementById('courier').addEventListener('change', function() {
+    const isO = this.value === 'OTROS';
+    document.getElementById('courier-otro').classList.toggle('hidden', !isO);
+    document.getElementById('courier-otro').required = isO;
+});
+
+document.getElementById('docGaleria').addEventListener('change', e => setDoc(e.target.files[0]));
+document.getElementById('docCamara').addEventListener('change', e => setDoc(e.target.files[0]));
+function setDoc(file) {
+    if (!file) return;
+    docFile = file;
+    document.getElementById('doc-name').textContent = 'Archivo: ' + file.name;
+    const prev = document.getElementById('doc-preview');
+    prev.innerHTML = '';
+    const r = new FileReader();
+    r.onload = e => {
+        const w = document.createElement('div'); w.className = 'preview-wrap big';
+        const img = document.createElement('img'); img.src = e.target.result; img.className = 'preview-img';
+        const d = document.createElement('button'); d.className = 'del-btn'; d.type = 'button'; d.innerHTML = '×';
+        d.onclick = () => { docFile = null; prev.innerHTML = ''; document.getElementById('doc-name').textContent = ''; };
+        w.appendChild(img); w.appendChild(d); prev.appendChild(w);
+    };
+    r.readAsDataURL(file);
+}
+
+document.getElementById('fotosGaleria').addEventListener('change', e => addFotos(e.target.files));
+document.getElementById('fotosCamara').addEventListener('change', e => addFotos(e.target.files));
+function addFotos(files) {
+    fotosArr = [...fotosArr, ...Array.from(files).map(f => ({ id: ++fotoIdCnt, file: f }))].slice(0, 10);
+    renderFotos();
+}
+function renderFotos() {
+    const prev = document.getElementById('fotos-preview');
+    const nm = document.getElementById('fotos-name');
+    const clr = document.getElementById('clear-fotos');
+    prev.innerHTML = '';
+    if (!fotosArr.length) { nm.textContent = ''; clr.classList.add('hidden'); return; }
+    nm.textContent = fotosArr.length + ' archivo(s)';
+    clr.classList.remove('hidden');
+    fotosArr.forEach(obj => {
+        const r = new FileReader();
+        r.onload = e => {
+            const w = document.createElement('div'); w.className = 'preview-wrap';
+            const img = document.createElement('img'); img.src = e.target.result; img.className = 'preview-img';
+            const d = document.createElement('button'); d.className = 'del-btn'; d.type = 'button'; d.innerHTML = '×';
+            d.onclick = () => { fotosArr = fotosArr.filter(f => f.id !== obj.id); renderFotos(); };
+            w.appendChild(img); w.appendChild(d); prev.appendChild(w);
+        };
+        r.readAsDataURL(obj.file);
+    });
+}
+function clearFotos() { fotosArr = []; fotoIdCnt = 0; renderFotos(); }
+
+document.getElementById('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const origen = document.getElementById('origen').value;
+    const identifier = document.getElementById('identifier').value.trim();
+    const nvRel = document.getElementById('relatedNvNumber').value.trim();
+    if (origen === 'NV' && identifier !== nvRel) { setStatus('Error: N° Pedido y N° NV deben ser idénticos.', 'error'); return; }
+    if (!docFile) { setStatus('Error: Adjunte la Imagen Principal.', 'error'); return; }
+
+    showOverlay('loading'); setProgress(5, 'Iniciando...');
+    try {
+        setProgress(10, 'Verificando duplicados...');
+        try {
+            const dup = await callGAS({ action: 'checkDuplicate', identifier, origen });
+            if (dup.exists) throw new Error(`Pedido ya registrado el ${dup.date} por ${dup.user}`);
+        } catch(err) {
+            if (err.message.includes('ya registrado')) throw err;
+            console.warn('checkDuplicate omitido:', err.message);
         }
 
-        // =============================================
-        // REFERENCIAS DOM
-        // =============================================
-        const MAX_ADDITIONAL_PHOTOS = 10;
-        const pedidoForm         = document.getElementById('pedido-form');
-        const statusDiv          = document.getElementById('status');
-        const loaderOverlay      = document.getElementById('loader-overlay');
-        const loadingDisplay     = document.getElementById('loading-display');
-        const errorDisplay       = document.getElementById('error-display');
-        const errorMessage       = document.getElementById('error-message');
-        const closeErrorBtn      = document.getElementById('close-error-btn');
-        const origenSelect       = document.getElementById('origen');
-        const nvFields           = document.getElementById('nv-fields');
-        const nvRelatedFields    = document.getElementById('nv-related-fields');
-        const tipoDespachoSelect = document.getElementById('tipoDespacho');
-        const courierField       = document.getElementById('courier-field');
-        const courierSelect      = document.getElementById('courier');
-        const otrosCourierField  = document.getElementById('otros-courier-field');
-        const otrosCourierInput  = document.getElementById('otros-courier');
-        const additionalPhotosInput      = document.getElementById('additionalPhotosInfo');
-        const photosPreview              = document.getElementById('photos-preview');
-        const nvDocumentInput            = document.getElementById('nvDocumentInfo');
-        const docPreview                 = document.getElementById('doc-preview');
-        const nvDocumentCameraInput      = document.getElementById('nvDocumentInfoCamera');
-        const additionalPhotosCameraInput= document.getElementById('additionalPhotosInfoCamera');
-        const docFileName       = document.getElementById('doc-file-name');
-        const photosFileName    = document.getElementById('photos-file-name');
-        const progressFill      = document.getElementById('progress-fill');
-        const progressText      = document.getElementById('progress-text');
-        const clearAllPhotosBtn = document.getElementById('clear-all-photos');
+        setProgress(20, 'Procesando imágenes...');
+        const total = 1 + fotosArr.length; let done = 0;
+        const nvDocumentInfo = await compressImage(docFile);
+        done++; setProgress(20 + (done/total)*55, `Imagen ${done}/${total}`);
+        const additionalPhotosInfo = [];
+        for (const obj of fotosArr) {
+            additionalPhotosInfo.push(await compressImage(obj.file));
+            done++; setProgress(20 + (done/total)*55, `Imagen ${done}/${total}`);
+        }
 
-        let additionalFilesArray = [];
-        let fileIdCounter = 0;
+        const courierVal = document.getElementById('tipoDespacho').value === 'Envío'
+            ? (document.getElementById('courier').value === 'OTROS'
+                ? document.getElementById('courier-otro').value.trim()
+                : document.getElementById('courier').value) : '';
 
-        // =============================================
-        // INIT
-        // =============================================
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
+        setProgress(82, 'Enviando...');
+        const result = await callGAS({
+            action: 'processFormData',
+            data: {
+                user: document.getElementById('executingUser').value.trim(),
+                origen, identifier,
+                description: document.getElementById('description').value.trim(),
+                vendedor: document.getElementById('vendedor').value.trim(),
+                relatedNvNumber: nvRel,
+                armadoPor: document.getElementById('armadoPor').value.trim(),
+                fechaPedido: document.getElementById('fechaPedido').value,
+                nombreCliente: document.getElementById('nombreCliente').value.trim(),
+                tipoDespacho: document.getElementById('tipoDespacho').value,
+                courier: courierVal,
+                numeroBultos: document.getElementById('numeroBultos').value,
+                nvDocumentInfo, additionalPhotosInfo
+            }
         });
 
-        // =============================================
-        // EVENTOS
-        // =============================================
-        pedidoForm.addEventListener('submit', handlePedidoSubmit);
-        closeErrorBtn.addEventListener('click', () => toggleLoader(false));
-
-        origenSelect.addEventListener('change', function () {
-            const isNV = this.value === 'NV';
-            nvFields.classList.toggle('hidden', !isNV);
-            nvRelatedFields.classList.toggle('hidden', !isNV);
-            document.getElementById('vendedor').required = isNV;
-            document.getElementById('relatedNvNumber').required = isNV;
-        });
-
-        tipoDespachoSelect.addEventListener('change', function () {
-            const isEnvio = this.value === 'Envío';
-            courierField.classList.toggle('hidden', !isEnvio);
-            courierSelect.required = isEnvio;
-            if (!isEnvio) { otrosCourierField.classList.add('hidden'); otrosCourierInput.required = false; }
-        });
-
-        courierSelect.addEventListener('change', function () {
-            const isOtros = this.value === 'OTROS';
-            otrosCourierField.classList.toggle('hidden', !isOtros);
-            otrosCourierInput.required = isOtros;
-        });
-
-        nvDocumentInput.addEventListener('change', (e) => handleDocumentPreview(e.target.files[0]));
-        nvDocumentCameraInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                nvDocumentInput.files = dt.files;
-                handleDocumentPreview(file);
-            }
-        });
-        additionalPhotosInput.addEventListener('change', (e) => handleAdditionalFiles(e.target.files));
-        additionalPhotosCameraInput.addEventListener('change', (e) => handleAdditionalFiles(e.target.files));
-
-        // =============================================
-        // PREVIEW FOTOS
-        // =============================================
-        function handleDocumentPreview(file) {
-            docPreview.innerHTML = '';
-            docFileName.textContent = '';
-            if (file) {
-                docFileName.textContent = `Archivo: ${file.name}`;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const container = document.createElement('div');
-                    container.className = 'preview-container single-preview';
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'preview-image';
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.innerHTML = '×';
-                    deleteBtn.type = 'button';
-                    deleteBtn.onclick = () => {
-                        nvDocumentInput.value = '';
-                        nvDocumentInput.files = new DataTransfer().files;
-                        docPreview.innerHTML = '';
-                        docFileName.textContent = '';
-                    };
-                    container.appendChild(img);
-                    container.appendChild(deleteBtn);
-                    docPreview.appendChild(container);
-                };
-                reader.readAsDataURL(file);
-            }
+        if (result && result.success) {
+            setProgress(100, '¡Listo!');
+            setTimeout(() => { closeOverlay(); setStatus(result.message || '¡Pedido guardado!', 'success'); resetForm(); }, 500);
+        } else {
+            throw new Error(result?.error || 'Error desconocido');
         }
+    } catch(err) {
+        console.error(err);
+        showOverlay('error', err.message);
+    }
+});
 
-        function handleAdditionalFiles(files) {
-            const newFiles = Array.from(files).map(file => ({ id: ++fileIdCounter, file }));
-            additionalFilesArray = [...additionalFilesArray, ...newFiles];
-            if (additionalFilesArray.length > MAX_ADDITIONAL_PHOTOS) {
-                additionalFilesArray = additionalFilesArray.slice(0, MAX_ADDITIONAL_PHOTOS);
-                showStatus(`Máximo ${MAX_ADDITIONAL_PHOTOS} fotos permitidas.`, 'info');
-            }
-            updateAdditionalPhotosInput();
-            renderAdditionalPhotos();
-        }
+function compressImage(file, maxW=1280, q=0.75) {
+    return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onerror = rej;
+        r.onload = e => {
+            const img = new Image();
+            img.onerror = rej;
+            img.onload = () => {
+                let w = img.width, h = img.height;
+                if (w > maxW) { h = (maxW/w)*h; w = maxW; }
+                const c = document.createElement('canvas');
+                c.width = w; c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                c.toBlob(blob => {
+                    const r2 = new FileReader();
+                    r2.onload = () => res({ base64Data: r2.result.split(',')[1], mimeType: 'image/jpeg', fileName: file.name.replace(/\.[^/.]+$/, '.jpg') });
+                    r2.readAsDataURL(blob);
+                }, 'image/jpeg', q);
+            };
+            img.src = e.target.result;
+        };
+        r.readAsDataURL(file);
+    });
+}
 
-        function updateAdditionalPhotosInput() {
-            const dt = new DataTransfer();
-            additionalFilesArray.forEach(f => dt.items.add(f.file));
-            additionalPhotosInput.files = dt.files;
-        }
-
-        function renderAdditionalPhotos() {
-            photosPreview.innerHTML = '';
-            photosFileName.textContent = '';
-            clearAllPhotosBtn.classList.add('hidden');
-            if (additionalFilesArray.length > 0) {
-                photosFileName.textContent = `${additionalFilesArray.length} archivo(s) seleccionado(s)`;
-                clearAllPhotosBtn.classList.remove('hidden');
-                additionalFilesArray.forEach((fileObj) => {
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        const container = document.createElement('div');
-                        container.className = 'preview-container';
-                        container.setAttribute('data-file-id', fileObj.id);
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'preview-image';
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'delete-btn';
-                        deleteBtn.innerHTML = '×';
-                        deleteBtn.type = 'button';
-                        deleteBtn.onclick = () => removeAdditionalPhoto(fileObj.id);
-                        container.appendChild(img);
-                        container.appendChild(deleteBtn);
-                        photosPreview.appendChild(container);
-                    };
-                    reader.readAsDataURL(fileObj.file);
-                });
-            }
-        }
-
-        function removeAdditionalPhoto(id) {
-            additionalFilesArray = additionalFilesArray.filter(f => f.id !== id);
-            updateAdditionalPhotosInput();
-            renderAdditionalPhotos();
-        }
-
-        function clearAllAdditionalPhotos() {
-            additionalFilesArray = [];
-            fileIdCounter = 0;
-            updateAdditionalPhotosInput();
-            renderAdditionalPhotos();
-        }
-
-        // =============================================
-        // SUBMIT PRINCIPAL
-        // =============================================
-        async function handlePedidoSubmit(e) {
-            e.preventDefault();
-            if (!pedidoForm.checkValidity()) {
-                pedidoForm.reportValidity();
-                showStatus('Por favor, complete todos los campos obligatorios.', 'error');
-                return;
-            }
-
-            const origenValue        = document.getElementById('origen').value;
-            const identifierValue    = document.getElementById('identifier').value.trim();
-            const relatedNvNumberValue = document.getElementById('relatedNvNumber').value.trim();
-
-            if (origenValue === 'NV' && identifierValue !== relatedNvNumberValue) {
-                showStatus('Error: Para Nota de Venta, el "N° Pedido" y el "N° NV Relacionada" deben ser idénticos.', 'error');
-                document.getElementById('relatedNvNumber').focus();
-                return;
-            }
-
-            toggleLoader(true, 'loading');
-            updateProgress(0, 'Validando pedido...');
-
-            try {
-                // --- VERIFICAR DUPLICADO ---
-                updateProgress(10, 'Verificando duplicados...');
-                try {
-                    const dupResult = await fetchGAS({
-                        action: 'checkDuplicate',
-                        identifier: identifierValue,
-                        origen: origenValue
-                    });
-                    if (dupResult.exists) {
-                        throw new Error(`Este pedido ya fue registrado el ${dupResult.date} por ${dupResult.user}`);
-                    }
-                } catch (dupError) {
-                    // Si el error es de duplicado lo relanzamos, si es de red lo ignoramos
-                    if (dupError.message.includes('ya fue registrado')) throw dupError;
-                    console.warn('No se pudo verificar duplicado (continuando):', dupError.message);
-                }
-
-                // --- COMPRIMIR IMÁGENES ---
-                updateProgress(30, 'Procesando imágenes...');
-                const docFile        = nvDocumentInput.files[0];
-                const additionalFiles= additionalFilesArray.map(f => f.file);
-                const totalFiles     = (docFile ? 1 : 0) + additionalFiles.length;
-                let processedFiles   = 0;
-
-                const nvDocumentInfo = docFile ? await compressAndConvertImage(docFile) : null;
-                if (docFile) processedFiles++;
-                updateProgress(30 + (processedFiles / totalFiles) * 50, `Procesadas ${processedFiles} de ${totalFiles} imágenes`);
-
-                const additionalPhotosInfo = [];
-                for (let file of additionalFiles) {
-                    const compressed = await compressAndConvertImage(file);
-                    additionalPhotosInfo.push(compressed);
-                    processedFiles++;
-                    updateProgress(30 + (processedFiles / totalFiles) * 50, `Procesadas ${processedFiles} de ${totalFiles} imágenes`);
-                }
-
-                // --- PREPARAR DATOS ---
-                let courierValue = '';
-                if (tipoDespachoSelect.value === 'Envío') {
-                    courierValue = courierSelect.value === 'OTROS' ? otrosCourierInput.value.trim() : courierSelect.value;
-                }
-
-                updateProgress(85, 'Preparando datos...');
-                const formData = {
-                    user:           document.getElementById('executingUser').value.trim(),
-                    origen:         origenValue,
-                    identifier:     identifierValue,
-                    description:    document.getElementById('description').value.trim(),
-                    vendedor:       document.getElementById('vendedor').value.trim(),
-                    relatedNvNumber:relatedNvNumberValue,
-                    armadoPor:      document.getElementById('armadoPor').value.trim(),
-                    fechaPedido:    document.getElementById('fechaPedido').value,
-                    nombreCliente:  document.getElementById('nombreCliente').value.trim(),
-                    tipoDespacho:   tipoDespachoSelect.value,
-                    courier:        courierValue,
-                    numeroBultos:   document.getElementById('numeroBultos').value,
-                    nvDocumentInfo,
-                    additionalPhotosInfo
-                };
-
-                // --- ENVIAR ---
-                updateProgress(90, 'Enviando a Google Sheets...');
-                const result = await fetchGAS({ action: 'processFormData', data: formData });
-
-                if (result.success) {
-                    updateProgress(100, '¡Pedido enviado con éxito!');
-                    onFormSuccess(result.message);
-                } else {
-                    throw new Error(result.error || 'Error desconocido al guardar');
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                onFailure(error);
-            }
-        }
-
-        // =============================================
-        // COMPRESIÓN DE IMAGEN
-        // =============================================
-        async function compressAndConvertImage(file, maxWidth = 1280, quality = 0.75) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > maxWidth) {
-                            height = (maxWidth / width) * height;
-                            width = maxWidth;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                        canvas.toBlob((blob) => {
-                            const blobReader = new FileReader();
-                            blobReader.onload = () => {
-                                resolve({
-                                    base64Data: blobReader.result.split(',')[1],
-                                    mimeType: 'image/jpeg',
-                                    fileName: file.name.replace(/\.[^/.]+$/, '.jpg')
-                                });
-                            };
-                            blobReader.readAsDataURL(blob);
-                        }, 'image/jpeg', quality);
-                    };
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // =============================================
-        // HELPERS UI
-        // =============================================
-        function updateProgress(percentage, message) {
-            progressFill.style.width = percentage + '%';
-            progressText.textContent = message;
-        }
-
-        function onFormSuccess(message) {
-            toggleLoader(false);
-            showStatus(message, 'success');
-            pedidoForm.reset();
-            clearAllAdditionalPhotos();
-            handleDocumentPreview(null);https://github.com/leonardo7512/REGPEDIDOS/blob/main/index.html
-            document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
-            nvFields.classList.add('hidden');
-            nvRelatedFields.classList.add('hidden');
-            courierField.classList.add('hidden');
-            otrosCourierField.classList.add('hidden');
-            setTimeout(() => { statusDiv.textContent = ''; statusDiv.className = ''; }, 5000);
-        }
-
-        function onFailure(error) {
-            toggleLoader(true, 'error');
-            errorMessage.textContent = error.message || 'Ocurrió un error desconocido.';
-        }
-
-        function showStatus(message, type = '') {
-            statusDiv.textContent = message;
-            statusDiv.className = type ? `status-${type}` : '';
-            statusDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function toggleLoader(show, mode = 'loading') {
-            loaderOverlay.classList.toggle('hidden', !show);
-            document.getElementById('submit-btn').disabled = show;
-            if (show) {
-                loadingDisplay.classList.toggle('hidden', mode !== 'loading');
-                errorDisplay.classList.toggle('hidden', mode !== 'error');
-            }
-        }
-    </script>
-
+function setProgress(p, t) { document.getElementById('prog-fill').style.width=p+'%'; document.getElementById('prog-txt').textContent=t; }
+function showOverlay(mode, msg='') {
+    document.getElementById('overlay').classList.remove('hidden');
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('loading-box').classList.toggle('hidden', mode!=='loading');
+    document.getElementById('error-box').classList.toggle('hidden', mode!=='error');
+    if (mode==='error') document.getElementById('err-msg').textContent = msg;
+}
+function closeOverlay() { document.getElementById('overlay').classList.add('hidden'); document.getElementById('submit-btn').disabled=false; }
+function setStatus(msg, type) {
+    const s = document.getElementById('status');
+    s.textContent = msg; s.className = type==='success'?'s-success':'s-error';
+    if (type==='success') setTimeout(()=>{ s.textContent=''; s.className=''; }, 6000);
+}
+function resetForm() {
+    document.getElementById('form').reset();
+    docFile=null; fotosArr=[]; fotoIdCnt=0;
+    ['doc-preview','fotos-preview'].forEach(id=>document.getElementById(id).innerHTML='');
+    ['doc-name','fotos-name'].forEach(id=>document.getElementById(id).textContent='');
+    document.getElementById('clear-fotos').classList.add('hidden');
+    ['nv-vendedor','nv-related','courier-wrap'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
+}
+</script>
 </body>
 </html>
