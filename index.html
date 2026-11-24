@@ -49,11 +49,68 @@
         .err-icon { font-size: 46px; margin-bottom: 12px; }
         .err-msg { font-size: 1.05em; margin-bottom: 22px; line-height: 1.5; max-width: 380px; }
         .btn-close { width: auto; min-width: 110px; padding: 10px 20px; background: var(--gray); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: 600; }
+
+        /* ================= MODO DEVOLUCIÓN ================= */
+        [hidden] { display: none !important; }
+        body.modo-dev h2 { color: #e8590c; }
+
+        .selector-modo { display: flex; gap: 6px; background: #eef2f7; padding: 5px; border-radius: 8px; margin: -6px 0 20px; }
+        .selector-modo button { flex: 1; padding: 10px 8px; border: none; border-radius: 6px; background: transparent; color: var(--gray); font-weight: 600; font-size: 0.95em; cursor: pointer; }
+        .selector-modo button.activo { background: white; color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+        body.modo-dev .selector-modo button.activo { color: #e8590c; }
+
+        .dev-id { font-size: 0.85em; color: var(--gray); margin-bottom: 16px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .dev-id b { color: var(--dark); }
+        .dev-estado-fotos { font-weight: 600; color: var(--primary); }
+        .req::after { content: " *"; color: var(--danger); }
+
+        .dev-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .dev-chip { padding: 8px 13px; border: 1px solid var(--border); background: white; color: var(--dark); border-radius: 999px; font-size: 0.92em; cursor: pointer; }
+        .dev-chip.sel { border-color: var(--primary); background: #e7f1ff; color: #0056b3; font-weight: 700; }
+        .dev-chip.sel.verde { border-color: #28a745; background: #d4edda; color: #155724; }
+        .dev-chip.sel.rojo { border-color: var(--danger); background: #f8d7da; color: #721c24; }
+        .dev-chip.sel.naranja { border-color: #fd7e14; background: #fff3cd; color: #856404; }
+
+        .dev-cantidad { display: flex; gap: 8px; align-items: center; }
+        .dev-cantidad button { width: 44px; height: 44px; border-radius: 4px; border: 1px solid var(--border); background: white; font-size: 22px; cursor: pointer; }
+        .dev-cantidad input { width: 90px; text-align: center; font-size: 1.1em; font-weight: 700; }
+
+        .dev-aviso { margin-top: 8px; padding: 10px; border-radius: 4px; font-size: 0.85em; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+        .dev-botones-foto { display: flex; gap: 10px; }
+        .dev-oculto { position: absolute; left: -9999px; visibility: hidden; }
+        .dev-galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 10px; }
+        .dev-foto { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; border: 2px solid var(--border); background: var(--light); }
+        .dev-foto.error { border-color: var(--danger); }
+        .dev-foto img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+        .dev-foto .marca { position: absolute; left: 4px; bottom: 4px; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.65); color: white; }
+        .dev-foto .quitar { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; background: var(--danger); color: white; font-weight: bold; cursor: pointer; font-size: 13px; }
+
+        .btn-dev { background: #e8590c; color: white; font-size: 1.05em; padding: 14px; }
+        .btn-dev:disabled { background: var(--gray); cursor: not-allowed; }
+
+        .dev-lista-titulo { display: flex; justify-content: space-between; align-items: center; margin: 26px 0 8px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .dev-lista-titulo b { color: var(--dark); }
+        .dev-lista-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .dev-lista-item:last-child { border-bottom: none; }
+        .dev-lista-item .l1 { font-weight: 600; }
+        .dev-lista-item .l2 { font-size: 0.85em; color: var(--gray); }
+        .dev-etiqueta { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+        .dev-etiqueta.pend { background: #fff3cd; color: #856404; }
+        .dev-etiqueta.cerr { background: #d4edda; color: #155724; }
+
+        #devToast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); max-width: 90%; padding: 12px 16px; border-radius: 8px; z-index: 3000; background: #1f2937; color: white; font-size: 0.95em; text-align: center; display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        #devToast.error { background: var(--danger); }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>Registrar Pedido</h2>
+    <h2 id="tituloPagina">Registrar Pedido</h2>
+    <div class="selector-modo">
+        <button type="button" id="botonModoPedido" class="activo">📦 Pedidos</button>
+        <button type="button" id="botonModoDev">↩️ Modo devolución</button>
+    </div>
+    <div id="seccionPedido">
     <form id="form">
         <div class="form-grid">
             <div class="form-group"><label>Su Nombre / Usuario</label><input type="text" id="executingUser" required></div>
@@ -129,7 +186,90 @@
         </div>
     </form>
     <div id="status"></div>
+    </div>
+    <!-- ================= MODO DEVOLUCIÓN ================= -->
+    <div id="seccionDev" hidden>
+        <div class="dev-id">
+            <span>ID: <b id="devId"></b></span>
+            <span id="devEstadoFotos" class="dev-estado-fotos">Sin fotos</span>
+        </div>
+        <div class="form-grid">
+            <div class="form-group full">
+                <label class="req">Canal de la venta</label>
+                <div class="dev-chips" id="devChipsCanal"></div>
+            </div>
+            <div class="form-group full" id="devBloqueVendedor" hidden>
+                <label class="req">Vendedor</label>
+                <div class="dev-chips" id="devChipsVendedor"></div>
+            </div>
+            <div class="form-group">
+                <label id="devLblDocumento" for="devDocumento">N° documento</label>
+                <input type="text" id="devDocumento" autocomplete="off" placeholder="Ej: 34425">
+                <div class="dev-aviso" id="devAvisoDocumento" hidden></div>
+            </div>
+            <div class="form-group">
+                <label for="devCliente">Cliente <small>(opcional)</small></label>
+                <input type="text" id="devCliente" autocomplete="off" placeholder="Nombre o RUT">
+            </div>
+            <div class="form-group full">
+                <label for="devProducto" class="req">Producto(s) devuelto(s)</label>
+                <textarea id="devProducto" placeholder="Ej: FC123 Lata Sani-Air Lavanda"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="devCantidad">Cantidad</label>
+                <div class="dev-cantidad">
+                    <button type="button" id="devMenos">−</button>
+                    <input type="number" id="devCantidad" inputmode="numeric" min="1" value="1">
+                    <button type="button" id="devMas">+</button>
+                </div>
+            </div>
+            <div class="form-group full">
+                <label class="req">Estado del producto</label>
+                <div class="dev-chips" id="devChipsEstado"></div>
+            </div>
+            <div class="form-group full">
+                <label>Motivo</label>
+                <div class="dev-chips" id="devChipsMotivo"></div>
+            </div>
+            <div class="form-group full">
+                <label for="devNota">Descripción / nota</label>
+                <textarea id="devNota" placeholder="Qué trae, en qué condición viene, quién lo trajo, etc."></textarea>
+            </div>
+            <div class="form-group full">
+                <label class="req">Fotos <small>(todas las que necesites)</small></label>
+                <div class="dev-botones-foto">
+                    <button type="button" class="btn-file" id="devBotonGaleria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
+                    <button type="button" class="btn-file" id="devBotonCamara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
+                </div>
+                <input type="file" id="devInputGaleria" class="dev-oculto" accept="image/*" multiple>
+                <input type="file" id="devInputCamara" class="dev-oculto" accept="image/*" capture="environment">
+                <div class="dev-galeria" id="devGaleria"></div>
+            </div>
+            <div class="form-group full">
+                <label>Resolución</label>
+                <div class="dev-chips" id="devChipsResolucion"></div>
+            </div>
+            <div class="form-group" id="devBloqueNumeroResol" hidden>
+                <label for="devNumeroResol" id="devLblNumeroResol">N° de documento</label>
+                <input type="text" id="devNumeroResol" inputmode="numeric" autocomplete="off" placeholder="Si aún no existe, déjalo vacío">
+            </div>
+            <div class="form-group">
+                <label for="devRecibidoPor" class="req">Recibido por</label>
+                <input type="text" id="devRecibidoPor" autocomplete="off" placeholder="Tu nombre (queda guardado)">
+            </div>
+            <div class="form-group full">
+                <button type="button" id="botonDev" class="btn btn-dev">↩️ Guardar devolución</button>
+            </div>
+        </div>
+
+        <div class="dev-lista-titulo">
+            <b>📋 Últimas devoluciones</b>
+            <button type="button" class="clear-btn" id="devRecargar" style="border-color:var(--primary); color:var(--primary); margin:0;">↻ Actualizar</button>
+        </div>
+        <div id="devLista"><div class="dev-lista-item l2">Cargando…</div></div>
+    </div>
 </div>
+<div id="devToast"></div>
 
 <div id="overlay" class="overlay hidden">
     <div id="loading-box">
@@ -350,5 +490,430 @@ function resetForm() {
     document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
 }
 </script>
+
+    <!-- ================= MODO DEVOLUCIÓN (script independiente) ================= -->
+    <script>
+    (() => {
+        // URL de la aplicación web "Devoluciones AROMAKER" (Implementar → la que termina en /exec).
+        const DEVOLUCIONES_URL = 'https://script.google.com/macros/s/AKfycbx4lTOG1I_r8glp1GYvysj37NuRy0m_7rDNrmIeRX2MAEW01tRvqo4hw9nioextNWgg0w/exec';
+
+        const CANALES = ['Nota de venta', 'Mercado Libre', 'Falabella', 'Ripley', 'Líder', 'Paris', 'Web / Shopify', 'Otro'];
+        const VENDEDORES = ['AF', 'YR', 'LC', 'JG', 'BF', 'LR', 'ADM', 'Otro'];
+        const ESTADOS = [
+            { v: 'BUENO', t: '🟢 Bueno (vuelve a stock)', c: 'verde' },
+            { v: 'MALO', t: '🔴 Malo / dañado', c: 'rojo' },
+            { v: 'PARCIAL', t: '🟠 Parte bueno, parte malo', c: 'naranja' },
+            { v: 'POR REVISAR', t: '⚪ Por revisar', c: '' }
+        ];
+        const MOTIVOS = ['Cliente se arrepintió', 'Producto equivocado', 'Llegó dañado', 'Falla / defecto', 'No retirado / rechazado', 'Otro'];
+        const RESOLUCIONES = [
+            { v: 'POR DEFINIR', t: 'Por definir', c: '' },
+            { v: 'NOTA DE CRÉDITO', t: 'Nota de crédito', c: 'verde' },
+            { v: 'CONSUMO', t: 'Consumo', c: 'naranja' },
+            { v: 'CAMBIO DE PRODUCTO', t: 'Cambio de producto', c: 'verde' }
+        ];
+        const LADO_MAX = 1440;
+        const CALIDAD_JPG = 0.72;
+        const SUBIDAS_SIMULTANEAS = 2;
+
+        const $ = id => document.getElementById(id);
+
+        const st = {
+            id: nuevoId(),
+            canal: null, vendedor: null, estado: null, motivo: null,
+            resolucion: 'POR DEFINIR',
+            fotos: [],      // { miniatura, base64, estado: 'cola'|'subiendo'|'ok'|'error', fileId, url }
+            subiendo: 0,
+            guardando: false,
+            listaCargada: false,
+            modo: 'pedido'
+        };
+
+        // ------------------------------------------------------------------
+        // Utilidades
+        // ------------------------------------------------------------------
+
+        function nuevoId() {
+            const d = new Date();
+            const p = n => String(n).padStart(2, '0');
+            return `DEV-${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+        }
+
+        async function llamar(accion, datos) {
+            if (!DEVOLUCIONES_URL || DEVOLUCIONES_URL.indexOf('PEGA_AQUI') !== -1) {
+                throw new Error('Falta configurar la URL de Devoluciones en la página');
+            }
+            const respuesta = await fetch(DEVOLUCIONES_URL, {
+                method: 'POST',
+                mode: 'cors',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(Object.assign({ accion }, datos || {}))
+            });
+            const json = await respuesta.json();
+            if (json.status !== 'success') throw new Error(json.message || 'Error del servidor');
+            return json.data;
+        }
+
+        let temporizadorToast = null;
+        function toast(texto, esError) {
+            const t = $('devToast');
+            t.textContent = texto;
+            t.className = esError ? 'error' : '';
+            t.style.display = 'block';
+            clearTimeout(temporizadorToast);
+            temporizadorToast = setTimeout(() => { t.style.display = 'none'; }, esError ? 5000 : 2600);
+        }
+
+        function leerLocal(clave) { try { return localStorage.getItem(clave) || ''; } catch (e) { return ''; } }
+        function guardarLocal(clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) { /* sin almacenamiento */ } }
+
+        function escapar(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // ------------------------------------------------------------------
+        // Cambio de modo (NV / devolución)
+        // ------------------------------------------------------------------
+
+        function cambiarModo(modo) {
+            const dev = modo === 'devolucion';
+            st.modo = dev ? 'devolucion' : 'pedido';
+            $('seccionPedido').hidden = dev;
+            $('seccionDev').hidden = !dev;
+            document.body.classList.toggle('modo-dev', dev);
+            $('tituloPagina').textContent = dev ? 'Registrar Devolución' : 'Registrar Pedido';
+            document.title = dev ? 'Registrar Devolución' : 'Registrar Pedido';
+            $('botonModoPedido').classList.toggle('activo', !dev);
+            $('botonModoDev').classList.toggle('activo', dev);
+            try {
+                history.replaceState(null, '', dev ? '#devolucion' : location.pathname + location.search);
+            } catch (e) { /* solo cosmético */ }
+            if (dev && !st.listaCargada) cargarLista();
+            window.scrollTo({ top: 0 });
+        }
+
+        // ------------------------------------------------------------------
+        // Chips
+        // ------------------------------------------------------------------
+
+        function dibujarChips(contenedorId, opciones, clave, alCambiar) {
+            const cont = $(contenedorId);
+            cont.innerHTML = '';
+            opciones.forEach(op => {
+                const o = typeof op === 'string' ? { v: op, t: op, c: '' } : op;
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'dev-chip' + (st[clave] === o.v ? ' sel ' + (o.c || '') : '');
+                b.textContent = o.t;
+                b.onclick = () => {
+                    st[clave] = o.v;
+                    dibujarChips(contenedorId, opciones, clave, alCambiar);
+                    if (alCambiar) alCambiar(o.v);
+                };
+                cont.appendChild(b);
+            });
+        }
+
+        function alCambiarCanal(canal) {
+            const esNV = canal === 'Nota de venta';
+            $('devBloqueVendedor').hidden = !esNV;
+            if (!esNV) st.vendedor = null;
+            $('devLblDocumento').textContent = esNV
+                ? 'N° Nota de venta'
+                : (canal === 'Otro' ? 'N° documento (si tiene)' : `N° de orden / venta ${canal}`);
+            $('devLblDocumento').classList.toggle('required', canal !== 'Otro');
+            dibujarChips('devChipsVendedor', VENDEDORES, 'vendedor', alCambiarVendedor);
+        }
+
+        function alCambiarVendedor(v) {
+            if (v !== 'Otro') return;
+            const nombre = (prompt('Nombre o sigla del vendedor') || '').trim();
+            st.vendedor = nombre || null;
+            const lista = nombre && !VENDEDORES.includes(nombre) ? VENDEDORES.slice(0, -1).concat([nombre, 'Otro']) : VENDEDORES;
+            dibujarChips('devChipsVendedor', lista, 'vendedor', alCambiarVendedor);
+        }
+
+        function alCambiarResolucion(r) {
+            const conNumero = r === 'NOTA DE CRÉDITO' || r === 'CONSUMO';
+            $('devBloqueNumeroResol').hidden = !conNumero;
+            $('devLblNumeroResol').textContent = r === 'CONSUMO' ? 'N° de consumo' : 'N° de nota de crédito';
+            if (!conNumero) $('devNumeroResol').value = '';
+        }
+
+        // ------------------------------------------------------------------
+        // Fotos: se comprimen en el teléfono y se suben apenas se toman
+        // ------------------------------------------------------------------
+
+        function comprimir(archivo) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(archivo);
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.naturalWidth, h = img.naturalHeight;
+                    const mayor = Math.max(w, h);
+                    if (mayor > LADO_MAX) { w = Math.round(w * LADO_MAX / mayor); h = Math.round(h * LADO_MAX / mayor); }
+                    const lienzo = document.createElement('canvas');
+                    lienzo.width = w; lienzo.height = h;
+                    const ctx = lienzo.getContext('2d');
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const grande = lienzo.toDataURL('image/jpeg', CALIDAD_JPG);
+
+                    const m = 240 / Math.max(w, h);
+                    const mini = document.createElement('canvas');
+                    mini.width = Math.round(w * m); mini.height = Math.round(h * m);
+                    mini.getContext('2d').drawImage(lienzo, 0, 0, mini.width, mini.height);
+
+                    URL.revokeObjectURL(url);
+                    resolve({ base64: grande.split(',')[1], miniatura: mini.toDataURL('image/jpeg', 0.7) });
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen')); };
+                img.src = url;
+            });
+        }
+
+        async function agregarArchivos(lista) {
+            for (const archivo of Array.from(lista || [])) {
+                try {
+                    const { base64, miniatura } = await comprimir(archivo);
+                    st.fotos.push({ miniatura, base64, estado: 'cola' });
+                    dibujarGaleria();
+                    procesarCola();
+                } catch (e) {
+                    toast(e.message, true);
+                }
+            }
+        }
+
+        function procesarCola() {
+            while (st.subiendo < SUBIDAS_SIMULTANEAS) {
+                const foto = st.fotos.find(f => f.estado === 'cola');
+                if (!foto) break;
+                subir(foto);
+            }
+            actualizarEstado();
+        }
+
+        async function subir(foto) {
+            foto.estado = 'subiendo';
+            st.subiendo++;
+            dibujarGaleria();
+            const idDev = st.id;
+            try {
+                const n = st.fotos.indexOf(foto) + 1;
+                const r = await llamar('subirFoto', { idDev, nombre: `${idDev}_foto${n}.jpg`, base64: foto.base64 });
+                foto.fileId = r.fileId;
+                foto.url = r.url;
+                foto.estado = 'ok';
+                foto.base64 = null; // ya está en Drive, se libera memoria
+                if (!st.fotos.includes(foto)) llamar('borrarFoto', { idDev, fileId: r.fileId }).catch(() => {}); // se quitó mientras subía
+            } catch (e) {
+                foto.estado = 'error';
+                toast('Una foto no se pudo subir. Tócala para reintentar. (' + e.message + ')', true);
+            } finally {
+                st.subiendo--;
+                dibujarGaleria();
+                procesarCola();
+            }
+        }
+
+        function dibujarGaleria() {
+            const g = $('devGaleria');
+            g.innerHTML = '';
+            st.fotos.forEach((foto, i) => {
+                const d = document.createElement('div');
+                d.className = 'dev-foto' + (foto.estado === 'error' ? ' error' : '');
+                const marca = { cola: '⏳ en cola', subiendo: '⬆️ subiendo', ok: '✅ Foto ' + (i + 1), error: '⚠️ reintentar' }[foto.estado];
+                d.innerHTML = `<img src="${foto.miniatura}" alt=""><span class="marca">${marca}</span><button type="button" class="quitar">✕</button>`;
+                d.querySelector('img').onclick = () => {
+                    if (foto.estado === 'error') { foto.estado = 'cola'; procesarCola(); dibujarGaleria(); }
+                };
+                d.querySelector('.quitar').onclick = () => quitarFoto(foto);
+                g.appendChild(d);
+            });
+            actualizarEstado();
+        }
+
+        function quitarFoto(foto) {
+            if (!confirm('¿Quitar esta foto?')) return;
+            st.fotos = st.fotos.filter(f => f !== foto);
+            if (foto.estado === 'ok' && foto.fileId) llamar('borrarFoto', { idDev: st.id, fileId: foto.fileId }).catch(() => {});
+            dibujarGaleria();
+        }
+
+        function actualizarEstado() {
+            const total = st.fotos.length;
+            const ok = st.fotos.filter(f => f.estado === 'ok').length;
+            const err = st.fotos.filter(f => f.estado === 'error').length;
+            let txt = total === 0 ? 'Sin fotos' : `Fotos ${ok}/${total} subidas`;
+            if (err) txt += ` · ${err} con error`;
+            $('devEstadoFotos').textContent = txt;
+            const boton = $('botonDev');
+            boton.disabled = st.guardando || (total > 0 && ok < total);
+            boton.innerHTML = st.guardando
+                ? '⏳ Guardando…'
+                : (total > 0 && ok < total ? `⬆️ Subiendo fotos (${ok}/${total})…` : '↩️ Guardar devolución');
+        }
+
+        // ------------------------------------------------------------------
+        // Aviso de documento con devoluciones anteriores (no bloquea)
+        // ------------------------------------------------------------------
+
+        let ultimoDocConsultado = '';
+        async function revisarDocumento() {
+            const doc = $('devDocumento').value.trim();
+            const aviso = $('devAvisoDocumento');
+            if (!doc || doc === ultimoDocConsultado) return;
+            ultimoDocConsultado = doc;
+            try {
+                const previas = await llamar('buscarDocumento', { documento: doc });
+                if ($('devDocumento').value.trim() !== doc) return;
+                if (previas.length) {
+                    aviso.innerHTML = `⚠️ Este documento ya tiene ${previas.length} devolución(es): ` +
+                        previas.map(p => `${escapar(p.id)} (${escapar(p.fecha)}, ${escapar(p.resolucion)})`).join('; ') +
+                        '. Puedes registrar otra si corresponde.';
+                    aviso.hidden = false;
+                } else {
+                    aviso.hidden = true;
+                }
+            } catch (e) { aviso.hidden = true; }
+        }
+
+        // ------------------------------------------------------------------
+        // Guardar
+        // ------------------------------------------------------------------
+
+        function validar() {
+            if (!st.canal) return 'Elige el canal de la venta';
+            if (st.canal === 'Nota de venta' && !st.vendedor) return 'Elige el vendedor';
+            if (st.canal !== 'Otro' && !$('devDocumento').value.trim()) return 'Falta el número de documento';
+            if (!$('devProducto').value.trim()) return 'Falta el producto devuelto';
+            if (!st.estado) return 'Elige el estado del producto';
+            if (st.fotos.length === 0) return 'Agrega al menos una foto';
+            if (st.fotos.some(f => f.estado !== 'ok')) return 'Espera a que terminen de subir las fotos';
+            if (!$('devRecibidoPor').value.trim()) return 'Escribe quién recibe la devolución';
+            return null;
+        }
+
+        async function guardar() {
+            if (st.guardando) return;
+            const error = validar();
+            if (error) { toast(error, true); return; }
+
+            st.guardando = true;
+            actualizarEstado();
+            const recibidoPor = $('devRecibidoPor').value.trim();
+            guardarLocal('dev_recibidoPor', recibidoPor);
+
+            const datos = {
+                id: st.id,
+                canal: st.canal,
+                documento: $('devDocumento').value.trim(),
+                vendedor: st.vendedor || '',
+                cliente: $('devCliente').value.trim(),
+                producto: $('devProducto').value.trim(),
+                cantidad: Number($('devCantidad').value) || 1,
+                estado: st.estado,
+                motivo: st.motivo || '',
+                nota: $('devNota').value.trim(),
+                resolucion: st.resolucion,
+                numeroResolucion: $('devNumeroResol').value.trim(),
+                recibidoPor,
+                fotos: st.fotos.map(f => ({ fileId: f.fileId, url: f.url }))
+            };
+
+            try {
+                const r = await llamar('guardarDevolucion', { datos });
+                toast(r.yaExistia ? `${r.id} ya estaba guardada` : `✅ ${r.id} guardada`);
+                reiniciar();
+                cargarLista();
+            } catch (e) {
+                toast('No se pudo guardar: ' + e.message + '. Los datos siguen en pantalla, vuelve a tocar Guardar.', true);
+            } finally {
+                st.guardando = false;
+                actualizarEstado();
+            }
+        }
+
+        function reiniciar() {
+            st.id = nuevoId();
+            st.canal = st.vendedor = st.estado = st.motivo = null;
+            st.resolucion = 'POR DEFINIR';
+            st.fotos = [];
+            ['devDocumento', 'devCliente', 'devProducto', 'devNota', 'devNumeroResol'].forEach(id => { $(id).value = ''; });
+            $('devCantidad').value = 1;
+            $('devAvisoDocumento').hidden = true;
+            ultimoDocConsultado = '';
+            $('devId').textContent = st.id;
+            dibujarTodo();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ------------------------------------------------------------------
+        // Lista de últimas devoluciones
+        // ------------------------------------------------------------------
+
+        async function cargarLista() {
+            const cont = $('devLista');
+            try {
+                const items = await llamar('listarRecientes', { cantidad: 15 });
+                st.listaCargada = true;
+                if (!items.length) { cont.innerHTML = '<div class="dev-lista-item l2">Aún no hay devoluciones registradas.</div>'; return; }
+                cont.innerHTML = items.map(x => {
+                    const cerrada = x.gestion === 'CERRADA';
+                    const resol = x.resolucion + (x.numeroResolucion ? ` N° ${x.numeroResolucion}` : '');
+                    return `<div class="dev-lista-item">
+                        <div class="l1">${escapar(x.canal)} ${escapar(x.documento)}
+                            <span class="dev-etiqueta ${cerrada ? 'cerr' : 'pend'}">${escapar(x.gestion || 'PENDIENTE')}</span></div>
+                        <div class="l2">${escapar(x.id)} · ${escapar(x.fecha)} · ${escapar(x.estado)} · ${x.fotos} 📷</div>
+                        <div class="l2">${escapar(x.producto).slice(0, 90)} · ${escapar(resol)}</div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                cont.innerHTML = `<div class="dev-lista-item l2">No se pudo cargar la lista: ${escapar(e.message)}</div>`;
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Inicio
+        // ------------------------------------------------------------------
+
+        function dibujarTodo() {
+            dibujarChips('devChipsCanal', CANALES, 'canal', alCambiarCanal);
+            dibujarChips('devChipsEstado', ESTADOS, 'estado');
+            dibujarChips('devChipsMotivo', MOTIVOS, 'motivo');
+            dibujarChips('devChipsResolucion', RESOLUCIONES, 'resolucion', alCambiarResolucion);
+            $('devBloqueVendedor').hidden = true;
+            $('devLblDocumento').textContent = 'N° documento';
+            $('devLblDocumento').classList.remove('required');
+            alCambiarResolucion(st.resolucion);
+            dibujarGaleria();
+        }
+
+        $('devId').textContent = st.id;
+        $('devRecibidoPor').value = leerLocal('dev_recibidoPor');
+        $('devMenos').onclick = () => { $('devCantidad').value = Math.max(1, (Number($('devCantidad').value) || 1) - 1); };
+        $('devMas').onclick = () => { $('devCantidad').value = (Number($('devCantidad').value) || 0) + 1; };
+        $('devBotonCamara').onclick = () => $('devInputCamara').click();
+        $('devBotonGaleria').onclick = () => $('devInputGaleria').click();
+        $('devInputCamara').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
+        $('devInputGaleria').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
+        $('devDocumento').addEventListener('blur', revisarDocumento);
+        $('botonDev').onclick = guardar;
+        $('devRecargar').onclick = cargarLista;
+        $('botonModoPedido').onclick = () => cambiarModo('pedido');
+        $('botonModoDev').onclick = () => cambiarModo('devolucion');
+
+        window.addEventListener('beforeunload', e => {
+            if (st.fotos.length || $('devProducto').value.trim()) { e.preventDefault(); e.returnValue = ''; }
+        });
+
+        dibujarTodo();
+        // Abrir directo en modo devolución si el enlace termina en #devolucion
+        if (location.hash === '#devolucion') cambiarModo('devolucion');
+    })();
+    </script>
 </body>
 </html>
