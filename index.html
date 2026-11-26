@@ -137,6 +137,8 @@
         .dev-modal-titulo { font-weight: 700; font-size: 1.05em; }
         .dev-codigo { font-size: 3em; font-weight: 800; letter-spacing: 3px; color: #212529; border: 3px dashed #212529; border-radius: 10px; padding: 8px 0; font-family: "SF Mono", Menlo, Consolas, monospace; }
         .dev-modal-copiado { min-height: 1.2em; font-weight: 600; color: #2b8a3e; }
+        .dev-modal-fila { display: flex; gap: 8px; }
+        .dev-modal-fila .btn { flex: 1; padding: 12px 6px; }
         .dev-btn-listo { background: #e9ecef; color: var(--dark); }
         .dev-etiqueta.rev { background: #C92A2A; color: white; }
         .dev-etiqueta.adm { background: #D0EBFF; color: #1864AB; }
@@ -407,6 +409,10 @@
         <div class="dev-ayuda" id="modalCodigoDetalle"></div>
         <div class="dev-modal-copiado" id="modalCodigoCopiado"></div>
         <button type="button" id="botonCopiarCodigo" class="btn btn-dev">📋 Copiar código</button>
+        <div class="dev-modal-fila">
+            <button type="button" id="botonImprimirLocal" class="btn dev-btn-sec">🖨️ Imprimir etiqueta</button>
+            <button type="button" id="botonImprimirCorreo" class="btn dev-btn-sec">📧 A la impresora</button>
+        </div>
         <button type="button" id="botonCopiarDetalle" class="btn dev-btn-sec">📋 Copiar con detalle (para enviar a bodega)</button>
         <button type="button" id="botonCerrarModal" class="btn dev-btn-listo">Listo</button>
     </div>
@@ -1253,7 +1259,7 @@ function resetForm() {
             const admin = x.gestion === 'EN ADMINISTRACIÓN'
                 ? `<li><b>Administración:</b> falta el N° de ${x.resolucion === 'CONSUMO' ? 'consumo' : 'NC'} (se escribe en la hoja)</li>` : '';
             const codigo = x.codigo
-                ? `<div class="dev-codigo-linea">✍️ Código caja: <b>${escapar(x.codigo)}</b> <button type="button" class="clear-btn dev-btn-mini" data-copiar-codigo>📋 Copiar</button></div>` : '';
+                ? `<div class="dev-codigo-linea">✍️ Código caja: <b>${escapar(x.codigo)}</b> <button type="button" class="clear-btn dev-btn-mini" data-copiar-codigo>📋 Copiar</button> <button type="button" class="clear-btn dev-btn-mini" data-imprimir>🖨️ Imprimir</button> <button type="button" class="clear-btn dev-btn-mini" data-enviar-impresora>📧 A la impresora</button></div>` : '';
             return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>${codigo}${alerta}
                 <ul>
                     <li><b>Fecha:</b> ${escapar(x.fecha)} ${etiquetaGestion(x.gestion, x.dias, x.revision)}</li>${admin}
@@ -1282,6 +1288,10 @@ function resetForm() {
             $('fichaBodega').innerHTML = fichaBodega(x);
             const bc = $('fichaBodega').querySelector('[data-copiar-codigo]');
             if (bc) bc.onclick = async () => toast(await copiar(x.codigo) ? `📋 ${x.codigo} copiado` : 'No se pudo copiar', false);
+            const bi = $('fichaBodega').querySelector('[data-imprimir]');
+            if (bi) bi.onclick = () => imprimirEnTelefono(x);
+            const be = $('fichaBodega').querySelector('[data-enviar-impresora]');
+            if (be) be.onclick = () => enviarAImpresora(x.id, x.codigo, be);
             $('devDocumento').value = x.documento || '';
             $('devCliente').value = x.cliente || '';
             $('devProducto').value = x.producto || '';
@@ -1442,7 +1452,62 @@ function resetForm() {
             } catch (e) { return false; }
         }
 
-        let codigoActual = { codigo: '', detalle: '' };
+        // ---- Etiqueta de la caja: una hoja por bulto, en blanco y negro ----
+        function htmlEtiquetas(x) {
+            const bultos = Math.max(1, Math.min(Number(x.bultos) || 1, 50));
+            const fila = (t, v) => v ? `<tr><td class="t">${escapar(t)}</td><td>${escapar(v)}</td></tr>` : '';
+            const venta = [x.canal, x.documento].filter(Boolean).join(' ');
+            let hojas = '';
+            for (let i = 1; i <= bultos; i++) {
+                hojas += `<div class="hoja"><div class="cab">AROMAKER · DEVOLUCIÓN</div>
+                    <div class="cod">${escapar(x.codigo)}</div>
+                    <div class="bulto">Bulto ${i} de ${bultos}</div><table>
+                    ${fila('Venta', venta)}${fila('Cliente', x.cliente)}
+                    ${fila('Producto', (x.producto || '') + (x.cantidad ? ' (x' + x.cantidad + ')' : ''))}
+                    ${fila('Resolución', x.resolucion)}${fila('Destino', x.destino)}
+                    ${fila('Recepción', x.id + ' · ' + (x.fecha || ''))}
+                    ${fila('Etiqueta transp.', x.etiqueta ? x.etiqueta + (x.transportista ? ' · ' + x.transportista : '') : x.transportista)}
+                    ${fila('Estado', (x.estado || '') + (x.revision === 'REQUERIDA' ? ' · REQUIERE REVISIÓN TÉCNICA' : ''))}
+                    </table></div>`;
+            }
+            return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Etiqueta ${escapar(x.codigo)}</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"><style>
+                body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0}
+                .hoja{padding:24px 28px;page-break-after:always;break-after:page}.hoja:last-child{page-break-after:auto;break-after:auto}
+                .cab{font-size:18px;font-weight:bold;letter-spacing:3px;border-bottom:3px solid #000;padding-bottom:6px}
+                .cod{font-size:min(96px,16vw);white-space:nowrap;font-weight:900;letter-spacing:4px;text-align:center;border:6px solid #000;border-radius:14px;margin:18px 0 10px;padding:6px 0}
+                .bulto{font-size:30px;font-weight:bold;text-align:center;margin-bottom:14px}
+                table{width:100%;border-collapse:collapse;font-size:17px}td{padding:5px 6px;border-bottom:1px solid #000;vertical-align:top}
+                .t{width:34%;font-weight:bold}</style></head><body>${hojas}
+                <script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>`;
+        }
+
+        // Imprime desde el teléfono (AirPrint en iPhone, impresión de Android).
+        function imprimirEnTelefono(x) {
+            const w = window.open('', '_blank');
+            if (!w) { toast('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes e intenta de nuevo.', true); return; }
+            w.document.open();
+            w.document.write(htmlEtiquetas(x));
+            w.document.close();
+        }
+
+        // Envía el PDF directo a la impresora (Email Print) desde el servidor.
+        async function enviarAImpresora(id, codigo, boton) {
+            const textoAntes = boton ? boton.textContent : '';
+            if (boton) { boton.disabled = true; boton.textContent = '⏳ Enviando…'; }
+            try {
+                const r = await llamar('imprimirEtiqueta', { id });
+                toast(`🖨️ Etiqueta ${r.codigo} enviada a la impresora (${r.hojas} hoja${r.hojas === 1 ? '' : 's'})`);
+                if (boton) boton.textContent = '✅ Enviada';
+            } catch (e) {
+                toast('No se pudo enviar a la impresora: ' + e.message, true);
+                if (boton) boton.textContent = textoAntes;
+            } finally {
+                if (boton) boton.disabled = false;
+            }
+        }
+
+        let codigoActual = { codigo: '', detalle: '', info: null };
         function mostrarCodigo(codigo, item, datos, gestion) {
             const venta = `${datos.canal}${datos.documento ? ' ' + datos.documento : ''}`;
             const lineas = [
@@ -1451,7 +1516,15 @@ function resetForm() {
                 [item.etiqueta ? 'Etiq. ' + item.etiqueta : '', item.bultos ? item.bultos + ' bulto(s)' : '', item.transportista].filter(Boolean).join(' · '),
                 `Venta: ${venta}`
             ].filter(Boolean);
-            codigoActual = { codigo, detalle: lineas.join('\n') };
+            codigoActual = {
+                codigo, detalle: lineas.join('\n'),
+                info: Object.assign({}, item, {
+                    codigo, canal: datos.canal, documento: datos.documento, cliente: datos.cliente,
+                    producto: datos.producto, cantidad: datos.cantidad, resolucion: datos.resolucion, destino: datos.destino,
+                    revision: datos.resultadoRevision ? 'REALIZADA' : item.revision
+                })
+            };
+            $('botonImprimirCorreo').textContent = '📧 A la impresora';
             $('modalCodigoTexto').textContent = codigo;
             $('modalCodigoDetalle').innerHTML = lineas.slice(1).map(escapar).join('<br>') + `<br><b>Estado:</b> ${escapar(gestion)}`;
             $('modalCodigoCopiado').textContent = '';
@@ -1467,6 +1540,8 @@ function resetForm() {
             $('modalCodigoCopiado').textContent = await copiar(codigoActual.detalle) ? '✅ Copiado con detalle: pégalo en WhatsApp para bodega' : '⚠️ No se pudo copiar';
         };
         $('botonCerrarModal').onclick = () => { $('modalCodigo').hidden = true; };
+        $('botonImprimirLocal').onclick = () => imprimirEnTelefono(codigoActual.info);
+        $('botonImprimirCorreo').onclick = () => enviarAImpresora(codigoActual.info.id, codigoActual.codigo, $('botonImprimirCorreo'));
 
         // ------------------------------------------------------------------
         // Inicio
