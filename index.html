@@ -268,7 +268,7 @@
                 <div class="dev-ayuda" id="recEtiquetaVista">Se guardan los 6 últimos dígitos. Si son varias, sepáralas con coma.</div>
             </div>
             <div class="form-group full">
-                <label>Transportista <small>(opcional)</small></label>
+                <label>Transportista / cómo llegó <small>(opcional)</small></label>
                 <div class="dev-chips" id="recChipsTransportista"></div>
             </div>
             <div class="form-group full">
@@ -661,7 +661,7 @@ function resetForm() {
 
         const CANALES = ['Nota de venta', 'Mercado Libre', 'Mercado Libre FULL', 'Falabella', 'Ripley', 'Líder', 'Paris', 'Web / Shopify', 'Consumo', 'Otro'];
         const VENDEDORES = ['AF', 'YR', 'LC', 'JG', 'BF', 'LR', 'ADM', 'Otro'];
-        const TRANSPORTISTAS = ['Bluexpress', 'Starken', 'Varmontt', 'Pullman', 'Chilexpress', 'Mercado Libre', 'Cliente en persona', 'Otro'];
+        const TRANSPORTISTAS = ['Bluexpress', 'Starken', 'Varmontt', 'Pullman', 'Chilexpress', 'Mercado Libre', 'Mercado Libre FULL', 'Shopify', 'Cliente en persona', 'Otro'];
         const ESTADOS_RECEPCION = [
             { v: 'OK', t: '🟢 OK', c: 'verde' },
             { v: 'DAÑADO', t: '🔴 Dañado', c: 'rojo' },
