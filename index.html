@@ -125,6 +125,10 @@
         .dev-ficha ul { list-style: none; font-size: 0.9em; line-height: 1.6; }
         .dev-ficha .fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
         .dev-ficha .fotos a { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: white; color: var(--primary); font-size: 0.85em; font-weight: 600; text-decoration: none; }
+        .dev-etiqueta.rev { background: #C92A2A; color: white; }
+        .dev-etiqueta.adm { background: #D0EBFF; color: #1864AB; }
+        .dev-alerta { background: #FFC9C9; color: #C92A2A; border-radius: 6px; padding: 10px; font-size: 0.9em; font-weight: 600; margin: 8px 0; }
+        .dev-tarjeta.fija { cursor: default; }
         .dev-ficha .fotos a img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         #devToast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); max-width: 90%; padding: 12px 16px; border-radius: 8px; z-index: 3000; background: #1f2937; color: white; font-size: 0.95em; text-align: center; display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
         #devToast.error { background: var(--danger); }
@@ -250,6 +254,7 @@
             <div class="form-group full">
                 <label class="req">¿Cómo viene el producto?</label>
                 <div class="dev-chips" id="recChipsEstado"></div>
+                <div class="dev-alerta" id="recAvisoRevision" hidden>⚠️ Se enviará como alerta: el producto necesita servicio técnico o revisión. Quedará marcado en rojo en la hoja hasta que alguien escriba el resultado.</div>
             </div>
             <div class="form-group full">
                 <label for="recNota">Nota <small>(opcional)</small></label>
@@ -282,9 +287,21 @@
             <div id="listaPorAsociar"><div class="dev-lista-item l2">Cargando…</div></div>
 
             <div class="dev-lista-titulo">
-                <b>🧾 Falta NC / consumo <span class="dev-cuenta" id="cuentaPendientes"></span></b>
+                <b>🤔 Falta definir resolución <span class="dev-cuenta" id="cuentaPorDefinir"></span></b>
             </div>
-            <div id="listaPendientes"></div>
+            <div class="dev-ayuda">Ya asociadas a la venta, pero sin decidir NC, consumo o cambio.</div>
+            <div id="listaPorDefinir"></div>
+
+            <div class="dev-lista-titulo">
+                <b>🧾 En administración <span class="dev-cuenta" id="cuentaAdmin"></span></b>
+            </div>
+            <div class="dev-ayuda">Fase 3: administración escribe el N° de NC o consumo directamente en la hoja. Al hacerlo, pasan solas a cerradas.</div>
+            <div id="listaAdmin"></div>
+
+            <div class="dev-lista-titulo">
+                <b>✅ Cerradas recientes</b>
+            </div>
+            <div id="listaCerradas"></div>
 
             <button type="button" class="btn dev-btn-sec" id="botonIrRecepcion">📥 Registrar una recepción desde aquí</button>
         </div>
@@ -341,13 +358,19 @@
                     <input type="file" id="devInputCamara" class="dev-oculto" accept="image/*" capture="environment">
                     <div class="dev-galeria" id="devGaleria"></div>
                 </div>
+                <div class="form-group full" id="devBloqueRevision" hidden>
+                    <label for="devResultadoRevision">⚠️ Resultado de la revisión técnica</label>
+                    <textarea id="devResultadoRevision" placeholder="Ej: funciona bien / falla de fábrica / se envía a servicio técnico"></textarea>
+                    <div class="dev-ayuda">Mientras esté vacío, la devolución sigue marcada en rojo en la hoja.</div>
+                </div>
+                <div class="form-group full">
+                    <label>Destino del producto <small>(opcional)</small></label>
+                    <div class="dev-chips" id="devChipsDestino"></div>
+                </div>
                 <div class="form-group full">
                     <label>Resolución</label>
                     <div class="dev-chips" id="devChipsResolucion"></div>
-                </div>
-                <div class="form-group" id="devBloqueNumeroResol" hidden>
-                    <label for="devNumeroResol" id="devLblNumeroResol">N° de documento</label>
-                    <input type="text" id="devNumeroResol" inputmode="numeric" autocomplete="off" placeholder="Si aún no existe, déjalo vacío">
+                    <div class="dev-ayuda" id="devAyudaResolucion"></div>
                 </div>
                 <div class="form-group">
                     <label for="devAsociadoPor" class="req">Asociado por</label>
@@ -598,8 +621,9 @@ function resetForm() {
             { v: 'OK', t: '🟢 OK', c: 'verde' },
             { v: 'DAÑADO', t: '🔴 Dañado', c: 'rojo' },
             { v: 'PARCIAL', t: '🟠 Parte OK, parte dañado', c: 'naranja' },
-            { v: 'POR REVISAR', t: '⚪ Por revisar', c: '' }
+            { v: 'REVISIÓN TÉCNICA', t: '⚠️ No se puede saber · revisión técnica', c: 'rojo' }
         ];
+        const DESTINOS = ['Vuelve a stock', 'Merma / desecho', 'Servicio técnico', 'Devolver a proveedor'];
         const MOTIVOS = ['Cliente se arrepintió', 'Producto equivocado', 'Llegó dañado', 'Falla / defecto', 'No retirado / rechazado', 'Otro'];
         const RESOLUCIONES = [
             { v: 'POR DEFINIR', t: 'Por definir', c: '' },
@@ -619,7 +643,7 @@ function resetForm() {
         const st = {
             modo: 'pedido',
             rec: { id: nuevoId(), transportista: null, estado: null, guardando: false, transportistas: TRANSPORTISTAS.slice() },
-            aso: { item: null, canal: null, vendedor: null, motivo: null, resolucion: 'POR DEFINIR', guardando: false, vendedores: VENDEDORES.slice() },
+            aso: { item: null, canal: null, vendedor: null, motivo: null, destino: null, resolucion: 'POR DEFINIR', guardando: false, vendedores: VENDEDORES.slice() },
             pendientes: []
         };
 
@@ -630,7 +654,9 @@ function resetForm() {
         function nuevoId() {
             const d = new Date();
             const p = n => String(n).padStart(2, '0');
-            return `DEV-${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+            // Sufijo al azar: dos teléfonos que registren en el mismo segundo no chocan.
+            const azar = Array.from({ length: 2 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+            return `DEV-${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${azar}`;
         }
 
         async function llamar(accion, datos) {
@@ -677,9 +703,10 @@ function resetForm() {
                 .join(', ');
         }
 
-        function etiquetaGestion(g, dias) {
-            const clase = g === 'CERRADA' ? 'cerr' : (g === 'POR ASOCIAR' ? 'asoc' : 'pend');
+        function etiquetaGestion(g, dias, revision) {
+            const clase = { 'CERRADA': 'cerr', 'POR ASOCIAR': 'asoc', 'EN ADMINISTRACIÓN': 'adm' }[g] || 'pend';
             let html = `<span class="dev-etiqueta ${clase}">${escapar(g || 'PENDIENTE')}</span>`;
+            if (revision === 'REQUERIDA') html += '<span class="dev-etiqueta rev">⚠️ REVISIÓN TÉCNICA</span>';
             if (dias >= DIAS_ATRASO && g !== 'CERRADA') html += `<span class="dev-etiqueta atraso">${dias} días háb.</span>`;
             return html;
         }
@@ -937,7 +964,13 @@ function resetForm() {
                 if (!st.rec.transportistas.includes(nombre)) st.rec.transportistas = st.rec.transportistas.slice(0, -1).concat([nombre, 'Otro']);
                 dibujarRecepcion();
             }, true);
-            dibujarChips('recChipsEstado', ESTADOS_RECEPCION, st.rec, 'estado');
+            dibujarChips('recChipsEstado', ESTADOS_RECEPCION, st.rec, 'estado', dibujarAvisoRevision);
+            dibujarAvisoRevision();
+        }
+
+        function dibujarAvisoRevision() {
+            const caja = $('recAvisoRevision');
+            caja.hidden = st.rec.estado !== 'REVISIÓN TÉCNICA';
         }
 
         function reiniciarRecepcion() {
@@ -959,7 +992,7 @@ function resetForm() {
                 const items = await llamar('listarRecientes', { cantidad: 10 });
                 if (!items.length) { cont.innerHTML = '<div class="dev-lista-item l2">Aún no hay recepciones registradas.</div>'; return; }
                 cont.innerHTML = items.map(x => `<div class="dev-lista-item">
-                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion)}</div>
+                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion, 0, x.revision)}</div>
                         <div class="l2">${escapar(x.fecha)} · ${escapar(x.bultos || '?')} bulto(s) · ${escapar(x.estado)} · ${x.fotos} 📷</div>
                         <div class="l2">${x.etiqueta ? 'Etiq. ' + escapar(x.etiqueta) + ' · ' : ''}${x.transportista ? escapar(x.transportista) + ' · ' : ''}${x.recibidoPor ? 'Recibió: ' + escapar(x.recibidoPor) : ''}</div>
                     </div>`).join('');
@@ -1000,18 +1033,23 @@ function resetForm() {
                     <div class="l2">${escapar(x.estado)} · Recibió: ${escapar(x.recibidoPor || '—')} · ${x.cantFotos} 📷</div>
                     ${x.notaBodega ? `<div class="l2">📝 ${escapar(x.notaBodega).slice(0, 120)}</div>` : ''}`;
             } else {
-                const falta = x.resolucion === 'POR DEFINIR' ? 'falta definir resolución' : 'falta N° de ' + (x.resolucion === 'CONSUMO' ? 'consumo' : 'NC');
+                let estadoTxt;
+                if (x.gestion === 'POR DEFINIR') estadoTxt = 'falta definir resolución';
+                else if (x.gestion === 'EN ADMINISTRACIÓN') estadoTxt = `${escapar(x.resolucion)} · administración debe poner el N°`;
+                else estadoTxt = `${escapar(x.resolucion)}${x.numeroResolucion ? ' N° ' + escapar(x.numeroResolucion) : ''}${x.fechaCierre ? ' · cerrada ' + escapar(x.fechaCierre.slice(0, 10)) : ''}`;
                 lineas = `<div class="l2">${escapar(x.canal)} ${escapar(x.documento)}${x.cliente ? ' · ' + escapar(x.cliente) : ''}</div>
-                    <div class="l2">${escapar(x.producto).slice(0, 90)}</div>
-                    <div class="l2">${escapar(x.resolucion)} · ${falta}</div>`;
+                    <div class="l2">${escapar(x.producto).slice(0, 90)}${x.destino ? ' · ' + escapar(x.destino) : ''}</div>
+                    <div class="l2">${estadoTxt}</div>
+                    ${x.notaAdmin ? `<div class="l2">🧾 ${escapar(x.notaAdmin).slice(0, 120)}</div>` : ''}`;
             }
-            return `<button type="button" class="dev-tarjeta" data-id="${escapar(x.id)}">
+            const fija = x.gestion === 'CERRADA';
+            return `<${fija ? 'div' : 'button type="button"'} class="dev-tarjeta${fija ? ' fija' : ''}" data-id="${escapar(x.id)}">
                     <span class="mini">${mini || '📦'}</span>
                     <span class="cuerpo">
-                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion, x.dias)}</div>
+                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion, x.dias, x.revision)}</div>
                         ${lineas}
                     </span>
-                </button>`;
+                </${fija ? 'div' : 'button'}>`;
         }
 
         function pintarCuenta(id, n) {
@@ -1021,22 +1059,27 @@ function resetForm() {
         }
 
         async function cargarBandeja() {
-            const a = $('listaPorAsociar'), b = $('listaPendientes');
+            const listas = {
+                'POR ASOCIAR': ['listaPorAsociar', 'cuentaPorAsociar', '✅ No hay recepciones por asociar.'],
+                'POR DEFINIR': ['listaPorDefinir', 'cuentaPorDefinir', '✅ Nada pendiente de definir.'],
+                'EN ADMINISTRACIÓN': ['listaAdmin', 'cuentaAdmin', '✅ Nada esperando a administración.']
+            };
             try {
-                const items = await llamar('listarPendientes');
-                st.pendientes = items;
-                const porAsociar = items.filter(x => x.gestion === 'POR ASOCIAR');
-                const pendientes = items.filter(x => x.gestion === 'PENDIENTE');
-                pintarCuenta('cuentaPorAsociar', porAsociar.length);
-                pintarCuenta('cuentaPendientes', pendientes.length);
-                a.innerHTML = porAsociar.length ? porAsociar.map(tarjeta).join('') : '<div class="dev-vacio">✅ No hay recepciones por asociar.</div>';
-                b.innerHTML = pendientes.length ? pendientes.map(tarjeta).join('') : '<div class="dev-vacio">✅ No hay devoluciones esperando NC o consumo.</div>';
-                document.querySelectorAll('#bandeja .dev-tarjeta').forEach(el => {
+                const r = await llamar('listarPendientes');
+                st.pendientes = r.abiertas;
+                Object.keys(listas).forEach(g => {
+                    const [lista, cuenta, vacio] = listas[g];
+                    const items = r.abiertas.filter(x => x.gestion === g);
+                    pintarCuenta(cuenta, items.length);
+                    $(lista).innerHTML = items.length ? items.map(tarjeta).join('') : `<div class="dev-vacio">${vacio}</div>`;
+                });
+                $('listaCerradas').innerHTML = r.cerradas.length ? r.cerradas.map(tarjeta).join('') : '<div class="dev-vacio">Aún no hay devoluciones cerradas.</div>';
+                document.querySelectorAll('#bandeja button.dev-tarjeta').forEach(el => {
                     el.onclick = () => abrirPanel(el.getAttribute('data-id'));
                 });
             } catch (e) {
-                a.innerHTML = `<div class="dev-vacio">No se pudo cargar la bandeja: ${escapar(e.message)}</div>`;
-                b.innerHTML = '';
+                $('listaPorAsociar').innerHTML = `<div class="dev-vacio">No se pudo cargar la bandeja: ${escapar(e.message)}</div>`;
+                ['listaPorDefinir', 'listaAdmin', 'listaCerradas'].forEach(id => { $(id).innerHTML = ''; });
             }
         }
 
@@ -1045,13 +1088,17 @@ function resetForm() {
                 const src = miniaturaDrive(f, 300);
                 return `<a href="${escapar(f.url)}" target="_blank" rel="noopener">Foto ${i + 1}${src ? `<img src="${src}" alt="" onerror="this.remove()">` : ''}</a>`;
             }).join('');
-            return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>
+            const alerta = x.revision === 'REQUERIDA'
+                ? '<div class="dev-alerta">⚠️ Bodega no pudo determinar si el producto está bien: requiere servicio técnico o revisión. Escribe el resultado más abajo cuando se revise.</div>' : '';
+            const admin = x.gestion === 'EN ADMINISTRACIÓN'
+                ? `<li><b>Administración:</b> falta el N° de ${x.resolucion === 'CONSUMO' ? 'consumo' : 'NC'} (se escribe en la hoja)</li>` : '';
+            return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>${alerta}
                 <ul>
-                    <li><b>Fecha:</b> ${escapar(x.fecha)} ${etiquetaGestion(x.gestion, x.dias)}</li>
+                    <li><b>Fecha:</b> ${escapar(x.fecha)} ${etiquetaGestion(x.gestion, x.dias, x.revision)}</li>${admin}
                     <li><b>Bultos:</b> ${escapar(x.bultos || '—')}</li>
                     <li><b>Transportista:</b> ${escapar(x.transportista || '—')}</li>
                     <li><b>N° etiqueta (últ. 6):</b> ${escapar(x.etiqueta || '—')}</li>
-                    <li><b>Estado del producto:</b> ${escapar(x.estado || '—')}</li>
+                    <li><b>Estado del producto:</b> ${escapar(x.estado || '—')}${x.revision === 'REALIZADA' ? ' · revisión realizada' : ''}</li>
                     <li><b>Nota de bodega:</b> ${escapar(x.notaBodega || '—')}</li>
                     <li><b>Recibido por:</b> ${escapar(x.recibidoPor || '—')}</li>
                 </ul>
@@ -1067,6 +1114,7 @@ function resetForm() {
             a.canal = x.canal || null;
             a.vendedor = x.vendedor || null;
             a.motivo = x.motivo || null;
+            a.destino = x.destino || null;
             a.resolucion = x.resolucion || 'POR DEFINIR';
             a.vendedores = x.vendedor && !VENDEDORES.includes(x.vendedor) ? VENDEDORES.slice(0, -1).concat([x.vendedor, 'Otro']) : VENDEDORES.slice();
             $('fichaBodega').innerHTML = fichaBodega(x);
@@ -1075,7 +1123,8 @@ function resetForm() {
             $('devProducto').value = x.producto || '';
             $('devCantidad').value = x.cantidad || 1;
             $('devNota').value = x.descripcion || '';
-            $('devNumeroResol').value = x.numeroResolucion || '';
+            $('devResultadoRevision').value = x.resultadoRevision || '';
+            $('devBloqueRevision').hidden = !x.revision;
             $('devAsociadoPor').value = leerLocal('dev_asociadoPor') || x.asociadoPor || '';
             $('devAvisoDocumento').hidden = true;
             ultimoDocConsultado = '';
@@ -1083,7 +1132,7 @@ function resetForm() {
             dibujarAsociacion();
             $('bandeja').hidden = true;
             $('panelAsociar').hidden = false;
-            $('tituloPagina').textContent = x.gestion === 'POR ASOCIAR' ? 'Asociar devolución' : 'Completar devolución';
+            $('tituloPagina').textContent = x.gestion === 'POR ASOCIAR' ? 'Asociar devolución' : 'Revisar devolución';
             window.scrollTo({ top: 0 });
             if (x.documento) revisarDocumento();
         }
@@ -1118,15 +1167,20 @@ function resetForm() {
         }
 
         function alCambiarResolucion(r) {
-            const conNumero = r === 'NOTA DE CRÉDITO' || r === 'CONSUMO';
-            $('devBloqueNumeroResol').hidden = !conNumero;
-            $('devLblNumeroResol').textContent = r === 'CONSUMO' ? 'N° de consumo' : 'N° de nota de crédito';
-            if (!conNumero) $('devNumeroResol').value = '';
+            const ayuda = {
+                'POR DEFINIR': 'Queda en "Falta definir resolución" hasta que se decida.',
+                'NOTA DE CRÉDITO': 'Pasa a administración (fase 3): el N° de la NC se escribe en la hoja.',
+                'CONSUMO': 'Pasa a administración (fase 3): el N° del consumo se escribe en la hoja.',
+                'CAMBIO DE PRODUCTO': 'Queda cerrada al guardar.'
+            }[r] || '';
+            const numero = st.aso.item && st.aso.item.numeroResolucion;
+            $('devAyudaResolucion').textContent = ayuda + (numero && (r === 'NOTA DE CRÉDITO' || r === 'CONSUMO') ? ` Administración ya puso el N° ${numero}.` : '');
         }
 
         function dibujarAsociacion() {
             dibujarChips('devChipsCanal', CANALES, st.aso, 'canal', alCambiarCanal);
             dibujarChips('devChipsMotivo', MOTIVOS, st.aso, 'motivo', null, true);
+            dibujarChips('devChipsDestino', DESTINOS, st.aso, 'destino', null, true);
             dibujarChips('devChipsResolucion', RESOLUCIONES, st.aso, 'resolucion', alCambiarResolucion);
             alCambiarCanal(st.aso.canal);
             alCambiarResolucion(st.aso.resolucion);
@@ -1183,8 +1237,9 @@ function resetForm() {
                 cantidad: Number($('devCantidad').value) || 1,
                 motivo: a.motivo || '',
                 descripcion: $('devNota').value.trim(),
+                destino: a.destino || '',
+                resultadoRevision: $('devResultadoRevision').value.trim(),
                 resolucion: a.resolucion,
-                numeroResolucion: $('devNumeroResol').value.trim(),
                 asociadoPor,
                 fotos: fotosAso.datos()
             };
