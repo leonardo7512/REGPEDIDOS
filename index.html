@@ -169,12 +169,15 @@
                     <option value="FALAB">FALABELLA</option>
                     <option value="ML">MERCADO LIBRE</option>
                     <option value="MLFULL">MERCADO LIBRE FULL</option>
-                    <option value="WB">WEB</option>
+                    <option value="WB">SHOPIFY / WEB</option>
                     <option value="NV">NOTA DE VENTA</option>
                     <option value="RIPLEY">RIPLEY</option>
                     <option value="LIDER">LIDER</option>
+                    <option value="CONSUMO">CONSUMO</option>
+                    <option value="OTRO">OTRO (escribir)…</option>
                 </select>
             </div>
+            <div id="origen-manual" class="form-group hidden"><label>Escribe el origen</label><input type="text" id="origenManual" autocomplete="off" placeholder="Ej: PARIS, MAYORISTA" style="text-transform:uppercase"></div>
             <div id="nv-vendedor" class="form-group hidden"><label>Vendedor <small>(NV)</small></label><input type="text" id="vendedor"></div>
             <div id="nv-related" class="form-group hidden"><label>N° NV Relacionada</label><input type="text" id="relatedNvNumber"></div>
             <div class="form-group"><label>Fecha del Pedido</label><input type="date" id="fechaPedido" required></div>
@@ -460,6 +463,10 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 document.getElementById('origen').addEventListener('change', function() {
+    const esOtro = this.value === 'OTRO';
+    document.getElementById('origen-manual').classList.toggle('hidden', !esOtro);
+    document.getElementById('origenManual').required = esOtro;
+    if (esOtro) document.getElementById('origenManual').focus();
     const isNV = this.value === 'NV';
     document.getElementById('nv-vendedor').classList.toggle('hidden', !isNV);
     document.getElementById('nv-related').classList.toggle('hidden', !isNV);
@@ -526,7 +533,10 @@ function clearFotos() { fotosArr = []; fotoIdCnt = 0; renderFotos(); }
 
 document.getElementById('form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const origen = document.getElementById('origen').value;
+    const origenSel = document.getElementById('origen').value;
+    // "OTRO": se guarda lo que se escribió a mano, en mayúsculas.
+    const origen = origenSel === 'OTRO' ? document.getElementById('origenManual').value.trim().toUpperCase() : origenSel;
+    if (!origen) { setStatus('Error: escribe el origen del pedido.', 'error'); return; }
     const identifier = document.getElementById('identifier').value.trim();
     const nvRel = document.getElementById('relatedNvNumber').value.trim();
     if (origen === 'NV' && identifier !== nvRel) { setStatus('Error: N° Pedido y N° NV deben ser idénticos.', 'error'); return; }
@@ -634,7 +644,8 @@ function resetForm() {
     ['doc-preview','fotos-preview'].forEach(id=>document.getElementById(id).innerHTML='');
     ['doc-name','fotos-name'].forEach(id=>document.getElementById(id).textContent='');
     document.getElementById('clear-fotos').classList.add('hidden');
-    ['nv-vendedor','nv-related','courier-wrap'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    ['nv-vendedor','nv-related','courier-wrap','origen-manual'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('origenManual').required = false;
     document.getElementById('fechaPedido').value = new Date().toISOString().split('T')[0];
 }
 </script>
@@ -648,7 +659,7 @@ function resetForm() {
         // URL de la aplicación web "Devoluciones AROMAKER" (Implementar → la que termina en /exec).
         const DEVOLUCIONES_URL = 'https://script.google.com/macros/s/AKfycbx4lTOG1I_r8glp1GYvysj37NuRy0m_7rDNrmIeRX2MAEW01tRvqo4hw9nioextNWgg0w/exec';
 
-        const CANALES = ['Nota de venta', 'Mercado Libre', 'Falabella', 'Ripley', 'Líder', 'Paris', 'Web / Shopify', 'Otro'];
+        const CANALES = ['Nota de venta', 'Mercado Libre', 'Mercado Libre FULL', 'Falabella', 'Ripley', 'Líder', 'Paris', 'Web / Shopify', 'Consumo', 'Otro'];
         const VENDEDORES = ['AF', 'YR', 'LC', 'JG', 'BF', 'LR', 'ADM', 'Otro'];
         const TRANSPORTISTAS = ['Bluexpress', 'Starken', 'Varmontt', 'Pullman', 'Chilexpress', 'Mercado Libre', 'Cliente en persona', 'Otro'];
         const ESTADOS_RECEPCION = [
@@ -1286,6 +1297,7 @@ function resetForm() {
             a.destino = x.destino || null;
             a.resolucion = x.resolucion || 'POR DEFINIR';
             a.vendedores = x.vendedor && !VENDEDORES.includes(x.vendedor) ? VENDEDORES.slice(0, -1).concat([x.vendedor, 'Otro']) : VENDEDORES.slice();
+            a.canales = x.canal && !CANALES.includes(x.canal) ? CANALES.slice(0, -1).concat([x.canal, 'Otro']) : CANALES.slice();
             $('fichaBodega').innerHTML = fichaBodega(x);
             const bc = $('fichaBodega').querySelector('[data-copiar-codigo]');
             if (bc) bc.onclick = async () => toast(await copiar(x.codigo) ? `📋 ${x.codigo} copiado` : 'No se pudo copiar', false);
@@ -1322,6 +1334,20 @@ function resetForm() {
             return true;
         }
 
+        // "Otro": se escribe el canal a mano y queda como opción.
+        function alCambiarCanalChip(canal) {
+            if (canal === 'Otro') {
+                const nombre = (prompt('¿Qué canal? (déjalo vacío si no tiene)') || '').trim();
+                if (nombre) {
+                    st.aso.canal = nombre;
+                    const lista = st.aso.canales || CANALES.slice();
+                    if (!lista.includes(nombre)) st.aso.canales = lista.slice(0, -1).concat([nombre, 'Otro']);
+                    dibujarChips('devChipsCanal', st.aso.canales, st.aso, 'canal', alCambiarCanalChip);
+                }
+            }
+            alCambiarCanal(st.aso.canal);
+        }
+
         function alCambiarCanal(canal) {
             const esNV = canal === 'Nota de venta';
             $('devBloqueVendedor').hidden = !esNV;
@@ -1353,7 +1379,7 @@ function resetForm() {
         }
 
         function dibujarAsociacion() {
-            dibujarChips('devChipsCanal', CANALES, st.aso, 'canal', alCambiarCanal);
+            dibujarChips('devChipsCanal', st.aso.canales || CANALES, st.aso, 'canal', alCambiarCanalChip);
             dibujarChips('devChipsMotivo', MOTIVOS, st.aso, 'motivo', null, true);
             dibujarChips('devChipsDestino', DESTINOS, st.aso, 'destino', null, true);
             dibujarChips('devChipsResolucion', RESOLUCIONES, st.aso, 'resolucion', alCambiarResolucion);
