@@ -55,7 +55,7 @@
         body.modo-dev h2 { color: #e8590c; }
 
         .selector-modo { display: flex; gap: 6px; background: #eef2f7; padding: 5px; border-radius: 8px; margin: -6px 0 20px; }
-        .selector-modo button { flex: 1; padding: 10px 8px; border: none; border-radius: 6px; background: transparent; color: var(--gray); font-weight: 600; font-size: 0.95em; cursor: pointer; }
+        .selector-modo button { flex: 1; padding: 10px 2px; border: none; border-radius: 6px; background: transparent; color: var(--gray); font-weight: 600; font-size: 0.9em; cursor: pointer; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         .selector-modo button.activo { background: white; color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
         body.modo-dev .selector-modo button.activo { color: #e8590c; }
 
@@ -101,7 +101,8 @@
 
         /* ---- Devoluciones v2: recepción + bandeja ---- */
         body.modo-rec h2 { color: #e8590c; }
-        body.solo-bodega .selector-modo { display: none; }
+        body.solo-bodega #botonModoDev { display: none; }
+        body.modo-rec .selector-modo button.activo { color: #e8590c; }
         .dev-ayuda { font-size: 0.82em; color: var(--gray); margin-top: 6px; }
         .dev-ayuda b { color: var(--dark); }
         .dev-btn-mini { border-color: var(--primary); color: var(--primary); margin: 0; }
@@ -151,7 +152,8 @@
     <h2 id="tituloPagina">Registrar Pedido</h2>
     <div class="selector-modo">
         <button type="button" id="botonModoPedido" class="activo">📦 Pedidos</button>
-        <button type="button" id="botonModoDev">↩️ Devoluciones</button>
+        <button type="button" id="botonModoRec">📥 Recibir</button>
+        <button type="button" id="botonModoDev">🔗 Asociar</button>
     </div>
     <div id="seccionPedido">
     <form id="form">
@@ -663,7 +665,9 @@ function resetForm() {
         const SUBIDAS_SIMULTANEAS = 3;
 
         const $ = id => document.getElementById(id);
-        const soloBodega = location.hash === '#recepcion';
+        // Enlace de bodega: #recepcion (abre en recepción) o #bodega (abre en pedidos).
+        // Bodega ve "Pedidos" y "Recepción dev.", pero no la bandeja de asociación.
+        const soloBodega = location.hash === '#recepcion' || location.hash === '#bodega';
 
         const st = {
             modo: 'pedido',
@@ -924,8 +928,13 @@ function resetForm() {
 
         const TITULOS = { pedido: 'Registrar Pedido', devolucion: 'Devoluciones por asociar', recepcion: 'Recepción de devolución' };
 
+        function hashDeModo(modo) {
+            if (soloBodega) return modo === 'pedido' ? '#bodega' : '#recepcion';
+            return { pedido: '', recepcion: '#registrar-recepcion', devolucion: '#devolucion' }[modo];
+        }
+
         function cambiarModo(modo) {
-            if (soloBodega) modo = 'recepcion';
+            if (soloBodega && modo === 'devolucion') modo = 'recepcion';
             st.modo = modo;
             $('seccionPedido').hidden = modo !== 'pedido';
             $('seccionDev').hidden = modo !== 'devolucion';
@@ -935,9 +944,10 @@ function resetForm() {
             $('tituloPagina').textContent = TITULOS[modo];
             document.title = TITULOS[modo];
             $('botonModoPedido').classList.toggle('activo', modo === 'pedido');
-            $('botonModoDev').classList.toggle('activo', modo !== 'pedido');
+            $('botonModoRec').classList.toggle('activo', modo === 'recepcion');
+            $('botonModoDev').classList.toggle('activo', modo === 'devolucion');
             try {
-                const hash = modo === 'pedido' ? '' : '#' + modo;
+                const hash = hashDeModo(modo);
                 if (location.hash !== hash) history.replaceState(null, '', hash || location.pathname + location.search);
             } catch (e) { /* solo cosmético */ }
             if (modo === 'devolucion') { cerrarPanel(); cargarBandeja(); }
@@ -1481,12 +1491,16 @@ function resetForm() {
         $('botonIrRecepcion').onclick = () => cambiarModo('recepcion');
 
         $('botonModoPedido').onclick = () => cambiarModo('pedido');
+        $('botonModoRec').onclick = () => cambiarModo('recepcion');
         $('botonModoDev').onclick = () => cambiarModo('devolucion');
 
-        window.addEventListener('hashchange', () => {
-            if (location.hash === '#recepcion') cambiarModo('recepcion');
-            else if (location.hash === '#devolucion') cambiarModo('devolucion');
-        });
+        function modoDelEnlace() {
+            const h = location.hash;
+            if (h === '#recepcion' || h === '#registrar-recepcion') return 'recepcion';
+            if (h === '#devolucion') return soloBodega ? 'recepcion' : 'devolucion';
+            return 'pedido';
+        }
+        window.addEventListener('hashchange', () => cambiarModo(modoDelEnlace()));
 
         window.addEventListener('beforeunload', e => {
             const pendientesRec = colaRec.some(x => x.estado === 'enviando' || !x.fotos.every(f => f.estado === 'ok'));
@@ -1501,8 +1515,8 @@ function resetForm() {
         actualizarBotonRec();
         dibujarAsociacion();
 
-        if (location.hash === '#recepcion') cambiarModo('recepcion');
-        else if (location.hash === '#devolucion') cambiarModo('devolucion');
+        if (modoDelEnlace() !== 'pedido') cambiarModo(modoDelEnlace());
+        else if (soloBodega) cambiarModo('pedido'); // #bodega: deja el enlace marcado como de bodega
         procesarColaRec();
     })();
     </script>
