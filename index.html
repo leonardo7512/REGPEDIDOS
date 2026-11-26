@@ -99,6 +99,33 @@
         .dev-etiqueta.pend { background: #fff3cd; color: #856404; }
         .dev-etiqueta.cerr { background: #d4edda; color: #155724; }
 
+        /* ---- Devoluciones v2: recepción + bandeja ---- */
+        body.modo-rec h2 { color: #e8590c; }
+        body.solo-bodega .selector-modo { display: none; }
+        .dev-ayuda { font-size: 0.82em; color: var(--gray); margin-top: 6px; }
+        .dev-ayuda b { color: var(--dark); }
+        .dev-btn-mini { border-color: var(--primary); color: var(--primary); margin: 0; }
+        .dev-lista-titulo.primero { margin-top: 0; padding-top: 0; border-top: none; }
+        .dev-cuenta { display: inline-block; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #e8590c; color: white; font-size: 0.8em; text-align: center; }
+        .dev-cuenta.cero { background: #adb5bd; }
+        .dev-etiqueta.asoc { background: #e7f1ff; color: #0056b3; }
+        .dev-etiqueta.atraso { background: #f8d7da; color: #721c24; }
+        .dev-tarjeta { display: flex; gap: 12px; padding: 12px 10px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; text-align: left; width: 100%; font: inherit; color: inherit; }
+        .dev-tarjeta:active { background: #f1f5f9; }
+        .dev-tarjeta .mini { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 6px; background: var(--light) center/cover no-repeat; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
+        .dev-tarjeta .mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .dev-tarjeta .cuerpo { flex: 1; min-width: 0; }
+        .dev-tarjeta .l1 { font-weight: 700; }
+        .dev-tarjeta .l2 { font-size: 0.85em; color: var(--gray); overflow-wrap: anywhere; }
+        .dev-vacio { padding: 12px 0; font-size: 0.9em; color: var(--gray); }
+        .dev-btn-sec { margin-top: 22px; background: white; color: #e8590c; border: 1px solid #e8590c; }
+        .dev-volver { background: none; border: none; color: var(--primary); font-weight: 600; font-size: 0.95em; cursor: pointer; padding: 4px 0 14px; }
+        .dev-ficha { background: #fff8f1; border: 1px solid #ffd8a8; border-radius: 8px; padding: 14px; margin-bottom: 20px; }
+        .dev-ficha h3 { font-size: 1em; margin-bottom: 8px; color: #e8590c; }
+        .dev-ficha ul { list-style: none; font-size: 0.9em; line-height: 1.6; }
+        .dev-ficha .fotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 10px; }
+        .dev-ficha .fotos a { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: white; color: var(--primary); font-size: 0.85em; font-weight: 600; text-decoration: none; }
+        .dev-ficha .fotos a img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         #devToast { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); max-width: 90%; padding: 12px 16px; border-radius: 8px; z-index: 3000; background: #1f2937; color: white; font-size: 0.95em; text-align: center; display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
         #devToast.error { background: var(--danger); }
     </style>
@@ -108,7 +135,7 @@
     <h2 id="tituloPagina">Registrar Pedido</h2>
     <div class="selector-modo">
         <button type="button" id="botonModoPedido" class="activo">📦 Pedidos</button>
-        <button type="button" id="botonModoDev">↩️ Modo devolución</button>
+        <button type="button" id="botonModoDev">↩️ Devoluciones</button>
     </div>
     <div id="seccionPedido">
     <form id="form">
@@ -125,7 +152,6 @@
                     <option value="NV">NOTA DE VENTA</option>
                     <option value="RIPLEY">RIPLEY</option>
                     <option value="LIDER">LIDER</option>
-                    <option value="DEVO">DEVOLUCIÓN</option>
                 </select>
             </div>
             <div id="nv-vendedor" class="form-group hidden"><label>Vendedor <small>(NV)</small></label><input type="text" id="vendedor"></div>
@@ -187,86 +213,151 @@
     </form>
     <div id="status"></div>
     </div>
-    <!-- ================= MODO DEVOLUCIÓN ================= -->
-    <div id="seccionDev" hidden>
+    <!-- ================= DEVOLUCIONES · FASE 1: RECEPCIÓN (bodega) ================= -->
+    <div id="seccionRec" hidden>
         <div class="dev-id">
-            <span>ID: <b id="devId"></b></span>
-            <span id="devEstadoFotos" class="dev-estado-fotos">Sin fotos</span>
+            <span>ID: <b id="recId"></b></span>
+            <span id="recEstadoFotos" class="dev-estado-fotos">Sin fotos</span>
         </div>
         <div class="form-grid">
             <div class="form-group full">
-                <label class="req">Canal de la venta</label>
-                <div class="dev-chips" id="devChipsCanal"></div>
-            </div>
-            <div class="form-group full" id="devBloqueVendedor" hidden>
-                <label class="req">Vendedor</label>
-                <div class="dev-chips" id="devChipsVendedor"></div>
-            </div>
-            <div class="form-group">
-                <label id="devLblDocumento" for="devDocumento">N° documento</label>
-                <input type="text" id="devDocumento" autocomplete="off" placeholder="Ej: 34425">
-                <div class="dev-aviso" id="devAvisoDocumento" hidden></div>
-            </div>
-            <div class="form-group">
-                <label for="devCliente">Cliente <small>(opcional)</small></label>
-                <input type="text" id="devCliente" autocomplete="off" placeholder="Nombre o RUT">
-            </div>
-            <div class="form-group full">
-                <label for="devProducto" class="req">Producto(s) devuelto(s)</label>
-                <textarea id="devProducto" placeholder="Ej: FC123 Lata Sani-Air Lavanda"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="devCantidad">Cantidad</label>
-                <div class="dev-cantidad">
-                    <button type="button" id="devMenos">−</button>
-                    <input type="number" id="devCantidad" inputmode="numeric" min="1" value="1">
-                    <button type="button" id="devMas">+</button>
-                </div>
-            </div>
-            <div class="form-group full">
-                <label class="req">Estado del producto</label>
-                <div class="dev-chips" id="devChipsEstado"></div>
-            </div>
-            <div class="form-group full">
-                <label>Motivo</label>
-                <div class="dev-chips" id="devChipsMotivo"></div>
-            </div>
-            <div class="form-group full">
-                <label for="devNota">Descripción / nota</label>
-                <textarea id="devNota" placeholder="Qué trae, en qué condición viene, quién lo trajo, etc."></textarea>
-            </div>
-            <div class="form-group full">
-                <label class="req">Fotos <small>(todas las que necesites)</small></label>
+                <label class="req">Fotos <small>(embalaje como llegó, etiqueta y producto)</small></label>
                 <div class="dev-botones-foto">
-                    <button type="button" class="btn-file" id="devBotonGaleria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
-                    <button type="button" class="btn-file" id="devBotonCamara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
+                    <button type="button" class="btn-file" id="recBotonGaleria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
+                    <button type="button" class="btn-file" id="recBotonCamara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
                 </div>
-                <input type="file" id="devInputGaleria" class="dev-oculto" accept="image/*" multiple>
-                <input type="file" id="devInputCamara" class="dev-oculto" accept="image/*" capture="environment">
-                <div class="dev-galeria" id="devGaleria"></div>
-            </div>
-            <div class="form-group full">
-                <label>Resolución</label>
-                <div class="dev-chips" id="devChipsResolucion"></div>
-            </div>
-            <div class="form-group" id="devBloqueNumeroResol" hidden>
-                <label for="devNumeroResol" id="devLblNumeroResol">N° de documento</label>
-                <input type="text" id="devNumeroResol" inputmode="numeric" autocomplete="off" placeholder="Si aún no existe, déjalo vacío">
+                <input type="file" id="recInputGaleria" class="dev-oculto" accept="image/*" multiple>
+                <input type="file" id="recInputCamara" class="dev-oculto" accept="image/*" capture="environment">
+                <div class="dev-galeria" id="recGaleria"></div>
             </div>
             <div class="form-group">
-                <label for="devRecibidoPor" class="req">Recibido por</label>
-                <input type="text" id="devRecibidoPor" autocomplete="off" placeholder="Tu nombre (queda guardado)">
+                <label class="req">Bultos</label>
+                <div class="dev-cantidad">
+                    <button type="button" id="recMenos">−</button>
+                    <input type="number" id="recBultos" inputmode="numeric" min="1" value="1">
+                    <button type="button" id="recMas">+</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="recEtiqueta">N° de etiqueta <small>(opcional)</small></label>
+                <input type="text" id="recEtiqueta" autocomplete="off" placeholder="Número completo de la etiqueta">
+                <div class="dev-ayuda" id="recEtiquetaVista">Se guardan los 6 últimos dígitos. Si son varias, sepáralas con coma.</div>
             </div>
             <div class="form-group full">
-                <button type="button" id="botonDev" class="btn btn-dev">↩️ Guardar devolución</button>
+                <label>Transportista <small>(opcional)</small></label>
+                <div class="dev-chips" id="recChipsTransportista"></div>
+            </div>
+            <div class="form-group full">
+                <label class="req">¿Cómo viene el producto?</label>
+                <div class="dev-chips" id="recChipsEstado"></div>
+            </div>
+            <div class="form-group full">
+                <label for="recNota">Nota <small>(opcional)</small></label>
+                <textarea id="recNota" placeholder="Ej: caja abierta, falta 1 unidad, viene sin etiqueta"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="recRecibidoPor" class="req">Recibido por</label>
+                <input type="text" id="recRecibidoPor" autocomplete="off" placeholder="Tu nombre (queda guardado)">
+            </div>
+            <div class="form-group full">
+                <button type="button" id="botonRec" class="btn btn-dev">📥 Guardar recepción</button>
             </div>
         </div>
 
         <div class="dev-lista-titulo">
-            <b>📋 Últimas devoluciones</b>
-            <button type="button" class="clear-btn" id="devRecargar" style="border-color:var(--primary); color:var(--primary); margin:0;">↻ Actualizar</button>
+            <b>📋 Últimas recepciones</b>
+            <button type="button" class="clear-btn dev-btn-mini" id="recRecargar">↻ Actualizar</button>
         </div>
-        <div id="devLista"><div class="dev-lista-item l2">Cargando…</div></div>
+        <div id="recLista"><div class="dev-lista-item l2">Cargando…</div></div>
+    </div>
+
+    <!-- ================= DEVOLUCIONES · FASE 2: BANDEJA Y ASOCIACIÓN (web / retail) ================= -->
+    <div id="seccionDev" hidden>
+        <div id="bandeja">
+            <div class="dev-lista-titulo primero">
+                <b>📥 Por asociar <span class="dev-cuenta" id="cuentaPorAsociar"></span></b>
+                <button type="button" class="clear-btn dev-btn-mini" id="devRecargar">↻ Actualizar</button>
+            </div>
+            <div class="dev-ayuda">Recepciones de bodega que aún no tienen venta asociada. Toca una para completarla.</div>
+            <div id="listaPorAsociar"><div class="dev-lista-item l2">Cargando…</div></div>
+
+            <div class="dev-lista-titulo">
+                <b>🧾 Falta NC / consumo <span class="dev-cuenta" id="cuentaPendientes"></span></b>
+            </div>
+            <div id="listaPendientes"></div>
+
+            <button type="button" class="btn dev-btn-sec" id="botonIrRecepcion">📥 Registrar una recepción desde aquí</button>
+        </div>
+
+        <div id="panelAsociar" hidden>
+            <button type="button" class="dev-volver" id="botonVolver">← Volver a la bandeja</button>
+            <div class="dev-ficha" id="fichaBodega"></div>
+
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label class="req">Canal de la venta</label>
+                    <div class="dev-chips" id="devChipsCanal"></div>
+                </div>
+                <div class="form-group full" id="devBloqueVendedor" hidden>
+                    <label class="req">Vendedor</label>
+                    <div class="dev-chips" id="devChipsVendedor"></div>
+                </div>
+                <div class="form-group">
+                    <label id="devLblDocumento" for="devDocumento">N° documento</label>
+                    <input type="text" id="devDocumento" autocomplete="off" placeholder="Ej: 34425">
+                    <div class="dev-aviso" id="devAvisoDocumento" hidden></div>
+                </div>
+                <div class="form-group">
+                    <label for="devCliente">Cliente <small>(opcional)</small></label>
+                    <input type="text" id="devCliente" autocomplete="off" placeholder="Nombre o RUT">
+                </div>
+                <div class="form-group full">
+                    <label for="devProducto" class="req">Producto(s) devuelto(s)</label>
+                    <textarea id="devProducto" placeholder="Ej: FC123 Lata Sani-Air Lavanda"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="devCantidad">Cantidad</label>
+                    <div class="dev-cantidad">
+                        <button type="button" id="devMenos">−</button>
+                        <input type="number" id="devCantidad" inputmode="numeric" min="1" value="1">
+                        <button type="button" id="devMas">+</button>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Motivo</label>
+                    <div class="dev-chips" id="devChipsMotivo"></div>
+                </div>
+                <div class="form-group full">
+                    <label for="devNota">Descripción / nota</label>
+                    <textarea id="devNota" placeholder="Detalle de la devolución, acuerdo con el cliente, etc."></textarea>
+                </div>
+                <div class="form-group full">
+                    <label>Fotos adicionales <small>(opcional)</small> <span id="devEstadoFotos" class="dev-estado-fotos"></span></label>
+                    <div class="dev-botones-foto">
+                        <button type="button" class="btn-file" id="devBotonGaleria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg> Galería</button>
+                        <button type="button" class="btn-file" id="devBotonCamara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Cámara</button>
+                    </div>
+                    <input type="file" id="devInputGaleria" class="dev-oculto" accept="image/*" multiple>
+                    <input type="file" id="devInputCamara" class="dev-oculto" accept="image/*" capture="environment">
+                    <div class="dev-galeria" id="devGaleria"></div>
+                </div>
+                <div class="form-group full">
+                    <label>Resolución</label>
+                    <div class="dev-chips" id="devChipsResolucion"></div>
+                </div>
+                <div class="form-group" id="devBloqueNumeroResol" hidden>
+                    <label for="devNumeroResol" id="devLblNumeroResol">N° de documento</label>
+                    <input type="text" id="devNumeroResol" inputmode="numeric" autocomplete="off" placeholder="Si aún no existe, déjalo vacío">
+                </div>
+                <div class="form-group">
+                    <label for="devAsociadoPor" class="req">Asociado por</label>
+                    <input type="text" id="devAsociadoPor" autocomplete="off" placeholder="Tu nombre (queda guardado)">
+                </div>
+                <div class="form-group full">
+                    <button type="button" id="botonDev" class="btn btn-dev">✅ Guardar asociación</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <div id="devToast"></div>
@@ -491,7 +582,10 @@ function resetForm() {
 }
 </script>
 
-    <!-- ================= MODO DEVOLUCIÓN (script independiente) ================= -->
+    <!-- ================= DEVOLUCIONES v2 (script independiente) =================
+         Fase 1 · Recepción (bodega): #recepcion  → solo esa pantalla
+         Fase 2 · Bandeja (web / retail): #devolucion → asociar a la venta
+    -->
     <script>
     (() => {
         // URL de la aplicación web "Devoluciones AROMAKER" (Implementar → la que termina en /exec).
@@ -499,10 +593,11 @@ function resetForm() {
 
         const CANALES = ['Nota de venta', 'Mercado Libre', 'Falabella', 'Ripley', 'Líder', 'Paris', 'Web / Shopify', 'Otro'];
         const VENDEDORES = ['AF', 'YR', 'LC', 'JG', 'BF', 'LR', 'ADM', 'Otro'];
-        const ESTADOS = [
-            { v: 'BUENO', t: '🟢 Bueno (vuelve a stock)', c: 'verde' },
-            { v: 'MALO', t: '🔴 Malo / dañado', c: 'rojo' },
-            { v: 'PARCIAL', t: '🟠 Parte bueno, parte malo', c: 'naranja' },
+        const TRANSPORTISTAS = ['Bluexpress', 'Starken', 'Varmontt', 'Pullman', 'Chilexpress', 'Mercado Libre', 'Cliente en persona', 'Otro'];
+        const ESTADOS_RECEPCION = [
+            { v: 'OK', t: '🟢 OK', c: 'verde' },
+            { v: 'DAÑADO', t: '🔴 Dañado', c: 'rojo' },
+            { v: 'PARCIAL', t: '🟠 Parte OK, parte dañado', c: 'naranja' },
             { v: 'POR REVISAR', t: '⚪ Por revisar', c: '' }
         ];
         const MOTIVOS = ['Cliente se arrepintió', 'Producto equivocado', 'Llegó dañado', 'Falla / defecto', 'No retirado / rechazado', 'Otro'];
@@ -512,21 +607,20 @@ function resetForm() {
             { v: 'CONSUMO', t: 'Consumo', c: 'naranja' },
             { v: 'CAMBIO DE PRODUCTO', t: 'Cambio de producto', c: 'verde' }
         ];
+        const DIGITOS_ETIQUETA = 6;
+        const DIAS_ATRASO = 2;
         const LADO_MAX = 1440;
         const CALIDAD_JPG = 0.72;
         const SUBIDAS_SIMULTANEAS = 2;
 
         const $ = id => document.getElementById(id);
+        const soloBodega = location.hash === '#recepcion';
 
         const st = {
-            id: nuevoId(),
-            canal: null, vendedor: null, estado: null, motivo: null,
-            resolucion: 'POR DEFINIR',
-            fotos: [],      // { miniatura, base64, estado: 'cola'|'subiendo'|'ok'|'error', fileId, url }
-            subiendo: 0,
-            guardando: false,
-            listaCargada: false,
-            modo: 'pedido'
+            modo: 'pedido',
+            rec: { id: nuevoId(), transportista: null, estado: null, guardando: false, transportistas: TRANSPORTISTAS.slice() },
+            aso: { item: null, canal: null, vendedor: null, motivo: null, resolucion: 'POR DEFINIR', guardando: false, vendedores: VENDEDORES.slice() },
+            pendientes: []
         };
 
         // ------------------------------------------------------------------
@@ -540,9 +634,6 @@ function resetForm() {
         }
 
         async function llamar(accion, datos) {
-            if (!DEVOLUCIONES_URL || DEVOLUCIONES_URL.indexOf('PEGA_AQUI') !== -1) {
-                throw new Error('Falta configurar la URL de Devoluciones en la página');
-            }
             const respuesta = await fetch(DEVOLUCIONES_URL, {
                 method: 'POST',
                 mode: 'cors',
@@ -562,7 +653,7 @@ function resetForm() {
             t.className = esError ? 'error' : '';
             t.style.display = 'block';
             clearTimeout(temporizadorToast);
-            temporizadorToast = setTimeout(() => { t.style.display = 'none'; }, esError ? 5000 : 2600);
+            temporizadorToast = setTimeout(() => { t.style.display = 'none'; }, esError ? 5000 : 2800);
         }
 
         function leerLocal(clave) { try { return localStorage.getItem(clave) || ''; } catch (e) { return ''; } }
@@ -572,77 +663,52 @@ function resetForm() {
             return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
-        // ------------------------------------------------------------------
-        // Cambio de modo (NV / devolución)
-        // ------------------------------------------------------------------
+        function miniaturaDrive(foto, ancho) {
+            return foto && foto.id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(foto.id)}&sz=w${ancho || 200}` : '';
+        }
 
-        function cambiarModo(modo) {
-            const dev = modo === 'devolucion';
-            st.modo = dev ? 'devolucion' : 'pedido';
-            $('seccionPedido').hidden = dev;
-            $('seccionDev').hidden = !dev;
-            document.body.classList.toggle('modo-dev', dev);
-            $('tituloPagina').textContent = dev ? 'Registrar Devolución' : 'Registrar Pedido';
-            document.title = dev ? 'Registrar Devolución' : 'Registrar Pedido';
-            $('botonModoPedido').classList.toggle('activo', !dev);
-            $('botonModoDev').classList.toggle('activo', dev);
-            try {
-                history.replaceState(null, '', dev ? '#devolucion' : location.pathname + location.search);
-            } catch (e) { /* solo cosmético */ }
-            if (dev && !st.listaCargada) cargarLista();
-            window.scrollTo({ top: 0 });
+        // Igual que en el servidor: últimos 6 dígitos de cada etiqueta.
+        function normalizarEtiquetas(v) {
+            return String(v || '').split(/[,;\n]+/)
+                .map(s => s.replace(/[^0-9A-Za-z]/g, '').toUpperCase())
+                .filter(Boolean)
+                .map(s => s.slice(-DIGITOS_ETIQUETA))
+                .filter((s, i, a) => a.indexOf(s) === i)
+                .join(', ');
+        }
+
+        function etiquetaGestion(g, dias) {
+            const clase = g === 'CERRADA' ? 'cerr' : (g === 'POR ASOCIAR' ? 'asoc' : 'pend');
+            let html = `<span class="dev-etiqueta ${clase}">${escapar(g || 'PENDIENTE')}</span>`;
+            if (dias >= DIAS_ATRASO && g !== 'CERRADA') html += `<span class="dev-etiqueta atraso">${dias} días háb.</span>`;
+            return html;
         }
 
         // ------------------------------------------------------------------
         // Chips
         // ------------------------------------------------------------------
 
-        function dibujarChips(contenedorId, opciones, clave, alCambiar) {
+        function dibujarChips(contenedorId, opciones, obj, clave, alCambiar, opcional) {
             const cont = $(contenedorId);
             cont.innerHTML = '';
             opciones.forEach(op => {
                 const o = typeof op === 'string' ? { v: op, t: op, c: '' } : op;
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'dev-chip' + (st[clave] === o.v ? ' sel ' + (o.c || '') : '');
+                b.className = 'dev-chip' + (obj[clave] === o.v ? ' sel ' + (o.c || '') : '');
                 b.textContent = o.t;
                 b.onclick = () => {
-                    st[clave] = o.v;
-                    dibujarChips(contenedorId, opciones, clave, alCambiar);
-                    if (alCambiar) alCambiar(o.v);
+                    obj[clave] = (opcional && obj[clave] === o.v) ? null : o.v;
+                    dibujarChips(contenedorId, opciones, obj, clave, alCambiar, opcional);
+                    if (alCambiar) alCambiar(obj[clave]);
                 };
                 cont.appendChild(b);
             });
         }
 
-        function alCambiarCanal(canal) {
-            const esNV = canal === 'Nota de venta';
-            $('devBloqueVendedor').hidden = !esNV;
-            if (!esNV) st.vendedor = null;
-            $('devLblDocumento').textContent = esNV
-                ? 'N° Nota de venta'
-                : (canal === 'Otro' ? 'N° documento (si tiene)' : `N° de orden / venta ${canal}`);
-            $('devLblDocumento').classList.toggle('required', canal !== 'Otro');
-            dibujarChips('devChipsVendedor', VENDEDORES, 'vendedor', alCambiarVendedor);
-        }
-
-        function alCambiarVendedor(v) {
-            if (v !== 'Otro') return;
-            const nombre = (prompt('Nombre o sigla del vendedor') || '').trim();
-            st.vendedor = nombre || null;
-            const lista = nombre && !VENDEDORES.includes(nombre) ? VENDEDORES.slice(0, -1).concat([nombre, 'Otro']) : VENDEDORES;
-            dibujarChips('devChipsVendedor', lista, 'vendedor', alCambiarVendedor);
-        }
-
-        function alCambiarResolucion(r) {
-            const conNumero = r === 'NOTA DE CRÉDITO' || r === 'CONSUMO';
-            $('devBloqueNumeroResol').hidden = !conNumero;
-            $('devLblNumeroResol').textContent = r === 'CONSUMO' ? 'N° de consumo' : 'N° de nota de crédito';
-            if (!conNumero) $('devNumeroResol').value = '';
-        }
-
         // ------------------------------------------------------------------
-        // Fotos: se comprimen en el teléfono y se suben apenas se toman
+        // Cargador de fotos: se comprimen en el teléfono y se suben apenas se toman.
+        // Se usa en la recepción (bodega) y en la asociación (fotos adicionales).
         // ------------------------------------------------------------------
 
         function comprimir(archivo) {
@@ -674,106 +740,412 @@ function resetForm() {
             });
         }
 
-        async function agregarArchivos(lista) {
-            for (const archivo of Array.from(lista || [])) {
-                try {
-                    const { base64, miniatura } = await comprimir(archivo);
-                    st.fotos.push({ miniatura, base64, estado: 'cola' });
-                    dibujarGaleria();
-                    procesarCola();
-                } catch (e) {
-                    toast(e.message, true);
+        function crearCargador(cfg) {
+            const c = { fotos: [], subiendo: 0 };
+
+            async function agregar(lista) {
+                const idDev = cfg.obtenerId();
+                if (!idDev) return;
+                for (const archivo of Array.from(lista || [])) {
+                    try {
+                        const { base64, miniatura } = await comprimir(archivo);
+                        c.fotos.push({ miniatura, base64, estado: 'cola', idDev });
+                        dibujar();
+                        procesar();
+                    } catch (e) { toast(e.message, true); }
                 }
             }
-        }
 
-        function procesarCola() {
-            while (st.subiendo < SUBIDAS_SIMULTANEAS) {
-                const foto = st.fotos.find(f => f.estado === 'cola');
-                if (!foto) break;
-                subir(foto);
+            function procesar() {
+                while (c.subiendo < SUBIDAS_SIMULTANEAS) {
+                    const foto = c.fotos.find(f => f.estado === 'cola');
+                    if (!foto) break;
+                    subir(foto);
+                }
+                cfg.alCambiar();
             }
-            actualizarEstado();
-        }
 
-        async function subir(foto) {
-            foto.estado = 'subiendo';
-            st.subiendo++;
-            dibujarGaleria();
-            const idDev = st.id;
-            try {
-                const n = st.fotos.indexOf(foto) + 1;
-                const r = await llamar('subirFoto', { idDev, nombre: `${idDev}_foto${n}.jpg`, base64: foto.base64 });
-                foto.fileId = r.fileId;
-                foto.url = r.url;
-                foto.estado = 'ok';
-                foto.base64 = null; // ya está en Drive, se libera memoria
-                if (!st.fotos.includes(foto)) llamar('borrarFoto', { idDev, fileId: r.fileId }).catch(() => {}); // se quitó mientras subía
-            } catch (e) {
-                foto.estado = 'error';
-                toast('Una foto no se pudo subir. Tócala para reintentar. (' + e.message + ')', true);
-            } finally {
-                st.subiendo--;
-                dibujarGaleria();
-                procesarCola();
+            async function subir(foto) {
+                foto.estado = 'subiendo';
+                c.subiendo++;
+                dibujar();
+                try {
+                    const r = await llamar('subirFoto', { idDev: foto.idDev, nombre: `${foto.idDev}_${Date.now()}.jpg`, base64: foto.base64 });
+                    foto.fileId = r.fileId;
+                    foto.url = r.url;
+                    foto.estado = 'ok';
+                    foto.base64 = null; // ya está en Drive, se libera memoria
+                    if (!c.fotos.includes(foto)) llamar('borrarFoto', { idDev: foto.idDev, fileId: r.fileId }).catch(() => {});
+                } catch (e) {
+                    foto.estado = 'error';
+                    toast('Una foto no se pudo subir. Tócala para reintentar. (' + e.message + ')', true);
+                } finally {
+                    c.subiendo--;
+                    dibujar();
+                    procesar();
+                }
             }
+
+            function dibujar() {
+                const g = $(cfg.galeria);
+                g.innerHTML = '';
+                c.fotos.forEach((foto, i) => {
+                    const d = document.createElement('div');
+                    d.className = 'dev-foto' + (foto.estado === 'error' ? ' error' : '');
+                    const marca = { cola: '⏳ en cola', subiendo: '⬆️ subiendo', ok: '✅ ' + (cfg.prefijo || 'Foto ') + (i + 1), error: '⚠️ reintentar' }[foto.estado];
+                    d.innerHTML = `<img src="${foto.miniatura}" alt=""><span class="marca">${marca}</span><button type="button" class="quitar">✕</button>`;
+                    d.querySelector('img').onclick = () => {
+                        if (foto.estado === 'error') { foto.estado = 'cola'; procesar(); dibujar(); }
+                    };
+                    d.querySelector('.quitar').onclick = () => quitar(foto);
+                    g.appendChild(d);
+                });
+                cfg.alCambiar();
+            }
+
+            function quitar(foto) {
+                if (!confirm('¿Quitar esta foto?')) return;
+                c.fotos = c.fotos.filter(f => f !== foto);
+                if (foto.estado === 'ok' && foto.fileId) llamar('borrarFoto', { idDev: foto.idDev, fileId: foto.fileId }).catch(() => {});
+                dibujar();
+            }
+
+            c.total = () => c.fotos.length;
+            c.listas = () => c.fotos.filter(f => f.estado === 'ok').length;
+            c.errores = () => c.fotos.filter(f => f.estado === 'error').length;
+            c.todasListas = () => c.fotos.every(f => f.estado === 'ok');
+            c.datos = () => c.fotos.map(f => ({ fileId: f.fileId, url: f.url }));
+            c.reiniciar = () => { c.fotos = []; dibujar(); };
+            c.agregar = agregar;
+            c.dibujar = dibujar;
+
+            $(cfg.botonCamara).onclick = () => $(cfg.inputCamara).click();
+            $(cfg.botonGaleria).onclick = () => $(cfg.inputGaleria).click();
+            $(cfg.inputCamara).onchange = e => { agregar(e.target.files); e.target.value = ''; };
+            $(cfg.inputGaleria).onchange = e => { agregar(e.target.files); e.target.value = ''; };
+            return c;
         }
 
-        function dibujarGaleria() {
-            const g = $('devGaleria');
-            g.innerHTML = '';
-            st.fotos.forEach((foto, i) => {
-                const d = document.createElement('div');
-                d.className = 'dev-foto' + (foto.estado === 'error' ? ' error' : '');
-                const marca = { cola: '⏳ en cola', subiendo: '⬆️ subiendo', ok: '✅ Foto ' + (i + 1), error: '⚠️ reintentar' }[foto.estado];
-                d.innerHTML = `<img src="${foto.miniatura}" alt=""><span class="marca">${marca}</span><button type="button" class="quitar">✕</button>`;
-                d.querySelector('img').onclick = () => {
-                    if (foto.estado === 'error') { foto.estado = 'cola'; procesarCola(); dibujarGaleria(); }
-                };
-                d.querySelector('.quitar').onclick = () => quitarFoto(foto);
-                g.appendChild(d);
-            });
-            actualizarEstado();
-        }
-
-        function quitarFoto(foto) {
-            if (!confirm('¿Quitar esta foto?')) return;
-            st.fotos = st.fotos.filter(f => f !== foto);
-            if (foto.estado === 'ok' && foto.fileId) llamar('borrarFoto', { idDev: st.id, fileId: foto.fileId }).catch(() => {});
-            dibujarGaleria();
-        }
-
-        function actualizarEstado() {
-            const total = st.fotos.length;
-            const ok = st.fotos.filter(f => f.estado === 'ok').length;
-            const err = st.fotos.filter(f => f.estado === 'error').length;
-            let txt = total === 0 ? 'Sin fotos' : `Fotos ${ok}/${total} subidas`;
+        function textoEstadoFotos(cargador, vacio) {
+            const total = cargador.total(), ok = cargador.listas(), err = cargador.errores();
+            let txt = total === 0 ? vacio : `Fotos ${ok}/${total} subidas`;
             if (err) txt += ` · ${err} con error`;
-            $('devEstadoFotos').textContent = txt;
-            const boton = $('botonDev');
-            boton.disabled = st.guardando || (total > 0 && ok < total);
-            boton.innerHTML = st.guardando
-                ? '⏳ Guardando…'
-                : (total > 0 && ok < total ? `⬆️ Subiendo fotos (${ok}/${total})…` : '↩️ Guardar devolución');
+            return txt;
         }
 
         // ------------------------------------------------------------------
-        // Aviso de documento con devoluciones anteriores (no bloquea)
+        // Cambio de modo: pedido / devolucion (bandeja) / recepcion
         // ------------------------------------------------------------------
+
+        const TITULOS = { pedido: 'Registrar Pedido', devolucion: 'Devoluciones por asociar', recepcion: 'Recepción de devolución' };
+
+        function cambiarModo(modo) {
+            if (soloBodega) modo = 'recepcion';
+            st.modo = modo;
+            $('seccionPedido').hidden = modo !== 'pedido';
+            $('seccionDev').hidden = modo !== 'devolucion';
+            $('seccionRec').hidden = modo !== 'recepcion';
+            document.body.classList.toggle('modo-dev', modo === 'devolucion');
+            document.body.classList.toggle('modo-rec', modo === 'recepcion');
+            $('tituloPagina').textContent = TITULOS[modo];
+            document.title = TITULOS[modo];
+            $('botonModoPedido').classList.toggle('activo', modo === 'pedido');
+            $('botonModoDev').classList.toggle('activo', modo !== 'pedido');
+            try {
+                const hash = modo === 'pedido' ? '' : '#' + modo;
+                if (location.hash !== hash) history.replaceState(null, '', hash || location.pathname + location.search);
+            } catch (e) { /* solo cosmético */ }
+            if (modo === 'devolucion') { cerrarPanel(); cargarBandeja(); }
+            if (modo === 'recepcion') cargarRecepciones();
+            window.scrollTo({ top: 0 });
+        }
+
+        // ==================================================================
+        // FASE 1 · RECEPCIÓN (bodega)
+        // ==================================================================
+
+        const fotosRec = crearCargador({
+            galeria: 'recGaleria', botonCamara: 'recBotonCamara', botonGaleria: 'recBotonGaleria',
+            inputCamara: 'recInputCamara', inputGaleria: 'recInputGaleria',
+            obtenerId: () => st.rec.id,
+            alCambiar: () => actualizarBotonRec()
+        });
+
+        function actualizarBotonRec() {
+            $('recEstadoFotos').textContent = textoEstadoFotos(fotosRec, 'Sin fotos');
+            const total = fotosRec.total(), ok = fotosRec.listas();
+            const boton = $('botonRec');
+            boton.disabled = st.rec.guardando || (total > 0 && ok < total);
+            boton.innerHTML = st.rec.guardando
+                ? '⏳ Guardando…'
+                : (total > 0 && ok < total ? `⬆️ Subiendo fotos (${ok}/${total})…` : '📥 Guardar recepción');
+        }
+
+        function vistaEtiqueta() {
+            const n = normalizarEtiquetas($('recEtiqueta').value);
+            $('recEtiquetaVista').innerHTML = n
+                ? `Se guardará: <b>${escapar(n)}</b>`
+                : 'Se guardan los 6 últimos dígitos. Si son varias, sepáralas con coma.';
+        }
+
+        function validarRecepcion() {
+            if (fotosRec.total() === 0) return 'Agrega al menos una foto (embalaje y producto)';
+            if (!fotosRec.todasListas()) return 'Espera a que terminen de subir las fotos';
+            if (!(Number($('recBultos').value) >= 1)) return 'Indica la cantidad de bultos';
+            if (!st.rec.estado) return 'Indica cómo viene el producto';
+            if (!$('recRecibidoPor').value.trim()) return 'Escribe quién recibe';
+            return null;
+        }
+
+        async function guardarRecepcion() {
+            if (st.rec.guardando) return;
+            const error = validarRecepcion();
+            if (error) { toast(error, true); return; }
+            st.rec.guardando = true;
+            actualizarBotonRec();
+            const recibidoPor = $('recRecibidoPor').value.trim();
+            guardarLocal('dev_recibidoPor', recibidoPor);
+            const datos = {
+                id: st.rec.id,
+                bultos: Number($('recBultos').value) || 1,
+                transportista: st.rec.transportista || '',
+                etiquetas: $('recEtiqueta').value,
+                estado: st.rec.estado,
+                nota: $('recNota').value.trim(),
+                recibidoPor,
+                fotos: fotosRec.datos()
+            };
+            try {
+                const r = await llamar('guardarRecepcion', { datos });
+                toast(r.yaExistia ? `${r.id} ya estaba guardada` : `✅ Recepción ${r.id} guardada`);
+                reiniciarRecepcion();
+                cargarRecepciones();
+            } catch (e) {
+                toast('No se pudo guardar: ' + e.message + '. Los datos siguen en pantalla, vuelve a tocar Guardar.', true);
+            } finally {
+                st.rec.guardando = false;
+                actualizarBotonRec();
+            }
+        }
+
+        function dibujarRecepcion() {
+            dibujarChips('recChipsTransportista', st.rec.transportistas, st.rec, 'transportista', v => {
+                if (v !== 'Otro') return;
+                const nombre = (prompt('¿Qué transportista?') || '').trim();
+                if (!nombre) return;
+                st.rec.transportista = nombre;
+                if (!st.rec.transportistas.includes(nombre)) st.rec.transportistas = st.rec.transportistas.slice(0, -1).concat([nombre, 'Otro']);
+                dibujarRecepcion();
+            }, true);
+            dibujarChips('recChipsEstado', ESTADOS_RECEPCION, st.rec, 'estado');
+        }
+
+        function reiniciarRecepcion() {
+            st.rec.id = nuevoId();
+            st.rec.transportista = st.rec.estado = null;
+            $('recBultos').value = 1;
+            $('recEtiqueta').value = '';
+            $('recNota').value = '';
+            $('recId').textContent = st.rec.id;
+            vistaEtiqueta();
+            fotosRec.reiniciar();
+            dibujarRecepcion();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function cargarRecepciones() {
+            const cont = $('recLista');
+            try {
+                const items = await llamar('listarRecientes', { cantidad: 10 });
+                if (!items.length) { cont.innerHTML = '<div class="dev-lista-item l2">Aún no hay recepciones registradas.</div>'; return; }
+                cont.innerHTML = items.map(x => `<div class="dev-lista-item">
+                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion)}</div>
+                        <div class="l2">${escapar(x.fecha)} · ${escapar(x.bultos || '?')} bulto(s) · ${escapar(x.estado)} · ${x.fotos} 📷</div>
+                        <div class="l2">${x.etiqueta ? 'Etiq. ' + escapar(x.etiqueta) + ' · ' : ''}${x.transportista ? escapar(x.transportista) + ' · ' : ''}${x.recibidoPor ? 'Recibió: ' + escapar(x.recibidoPor) : ''}</div>
+                    </div>`).join('');
+            } catch (e) {
+                cont.innerHTML = `<div class="dev-lista-item l2">No se pudo cargar la lista: ${escapar(e.message)}</div>`;
+            }
+        }
+
+        // ==================================================================
+        // FASE 2 · BANDEJA Y ASOCIACIÓN (web / retail)
+        // ==================================================================
+
+        const fotosAso = crearCargador({
+            galeria: 'devGaleria', botonCamara: 'devBotonCamara', botonGaleria: 'devBotonGaleria',
+            inputCamara: 'devInputCamara', inputGaleria: 'devInputGaleria',
+            prefijo: 'Nueva ',
+            obtenerId: () => st.aso.item && st.aso.item.id,
+            alCambiar: () => actualizarBotonAso()
+        });
+
+        function actualizarBotonAso() {
+            $('devEstadoFotos').textContent = fotosAso.total() ? '· ' + textoEstadoFotos(fotosAso, '') : '';
+            const total = fotosAso.total(), ok = fotosAso.listas();
+            const boton = $('botonDev');
+            boton.disabled = st.aso.guardando || (total > 0 && ok < total);
+            boton.innerHTML = st.aso.guardando
+                ? '⏳ Guardando…'
+                : (total > 0 && ok < total ? `⬆️ Subiendo fotos (${ok}/${total})…` : '✅ Guardar asociación');
+        }
+
+        function tarjeta(x) {
+            const primera = x.fotos && x.fotos[0];
+            const src = miniaturaDrive(primera, 160);
+            const mini = src ? `<img src="${src}" alt="" onerror="this.replaceWith('📦')">` : '';
+            let lineas;
+            if (x.gestion === 'POR ASOCIAR') {
+                lineas = `<div class="l2">${escapar(x.fecha)} · ${escapar(x.bultos || '?')} bulto(s)${x.transportista ? ' · ' + escapar(x.transportista) : ''}${x.etiqueta ? ' · Etiq. ' + escapar(x.etiqueta) : ''}</div>
+                    <div class="l2">${escapar(x.estado)} · Recibió: ${escapar(x.recibidoPor || '—')} · ${x.cantFotos} 📷</div>
+                    ${x.notaBodega ? `<div class="l2">📝 ${escapar(x.notaBodega).slice(0, 120)}</div>` : ''}`;
+            } else {
+                const falta = x.resolucion === 'POR DEFINIR' ? 'falta definir resolución' : 'falta N° de ' + (x.resolucion === 'CONSUMO' ? 'consumo' : 'NC');
+                lineas = `<div class="l2">${escapar(x.canal)} ${escapar(x.documento)}${x.cliente ? ' · ' + escapar(x.cliente) : ''}</div>
+                    <div class="l2">${escapar(x.producto).slice(0, 90)}</div>
+                    <div class="l2">${escapar(x.resolucion)} · ${falta}</div>`;
+            }
+            return `<button type="button" class="dev-tarjeta" data-id="${escapar(x.id)}">
+                    <span class="mini">${mini || '📦'}</span>
+                    <span class="cuerpo">
+                        <div class="l1">${escapar(x.id)} ${etiquetaGestion(x.gestion, x.dias)}</div>
+                        ${lineas}
+                    </span>
+                </button>`;
+        }
+
+        function pintarCuenta(id, n) {
+            const el = $(id);
+            el.textContent = n;
+            el.classList.toggle('cero', n === 0);
+        }
+
+        async function cargarBandeja() {
+            const a = $('listaPorAsociar'), b = $('listaPendientes');
+            try {
+                const items = await llamar('listarPendientes');
+                st.pendientes = items;
+                const porAsociar = items.filter(x => x.gestion === 'POR ASOCIAR');
+                const pendientes = items.filter(x => x.gestion === 'PENDIENTE');
+                pintarCuenta('cuentaPorAsociar', porAsociar.length);
+                pintarCuenta('cuentaPendientes', pendientes.length);
+                a.innerHTML = porAsociar.length ? porAsociar.map(tarjeta).join('') : '<div class="dev-vacio">✅ No hay recepciones por asociar.</div>';
+                b.innerHTML = pendientes.length ? pendientes.map(tarjeta).join('') : '<div class="dev-vacio">✅ No hay devoluciones esperando NC o consumo.</div>';
+                document.querySelectorAll('#bandeja .dev-tarjeta').forEach(el => {
+                    el.onclick = () => abrirPanel(el.getAttribute('data-id'));
+                });
+            } catch (e) {
+                a.innerHTML = `<div class="dev-vacio">No se pudo cargar la bandeja: ${escapar(e.message)}</div>`;
+                b.innerHTML = '';
+            }
+        }
+
+        function fichaBodega(x) {
+            const fotos = (x.fotos || []).map((f, i) => {
+                const src = miniaturaDrive(f, 300);
+                return `<a href="${escapar(f.url)}" target="_blank" rel="noopener">Foto ${i + 1}${src ? `<img src="${src}" alt="" onerror="this.remove()">` : ''}</a>`;
+            }).join('');
+            return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>
+                <ul>
+                    <li><b>Fecha:</b> ${escapar(x.fecha)} ${etiquetaGestion(x.gestion, x.dias)}</li>
+                    <li><b>Bultos:</b> ${escapar(x.bultos || '—')}</li>
+                    <li><b>Transportista:</b> ${escapar(x.transportista || '—')}</li>
+                    <li><b>N° etiqueta (últ. 6):</b> ${escapar(x.etiqueta || '—')}</li>
+                    <li><b>Estado del producto:</b> ${escapar(x.estado || '—')}</li>
+                    <li><b>Nota de bodega:</b> ${escapar(x.notaBodega || '—')}</li>
+                    <li><b>Recibido por:</b> ${escapar(x.recibidoPor || '—')}</li>
+                </ul>
+                ${fotos ? `<div class="fotos">${fotos}</div>` : ''}
+                ${x.carpetaUrl ? `<div class="dev-ayuda"><a href="${escapar(x.carpetaUrl)}" target="_blank" rel="noopener">Abrir carpeta de fotos</a></div>` : ''}`;
+        }
+
+        function abrirPanel(id) {
+            const x = st.pendientes.find(p => p.id === id);
+            if (!x) return;
+            const a = st.aso;
+            a.item = x;
+            a.canal = x.canal || null;
+            a.vendedor = x.vendedor || null;
+            a.motivo = x.motivo || null;
+            a.resolucion = x.resolucion || 'POR DEFINIR';
+            a.vendedores = x.vendedor && !VENDEDORES.includes(x.vendedor) ? VENDEDORES.slice(0, -1).concat([x.vendedor, 'Otro']) : VENDEDORES.slice();
+            $('fichaBodega').innerHTML = fichaBodega(x);
+            $('devDocumento').value = x.documento || '';
+            $('devCliente').value = x.cliente || '';
+            $('devProducto').value = x.producto || '';
+            $('devCantidad').value = x.cantidad || 1;
+            $('devNota').value = x.descripcion || '';
+            $('devNumeroResol').value = x.numeroResolucion || '';
+            $('devAsociadoPor').value = leerLocal('dev_asociadoPor') || x.asociadoPor || '';
+            $('devAvisoDocumento').hidden = true;
+            ultimoDocConsultado = '';
+            fotosAso.reiniciar();
+            dibujarAsociacion();
+            $('bandeja').hidden = true;
+            $('panelAsociar').hidden = false;
+            $('tituloPagina').textContent = x.gestion === 'POR ASOCIAR' ? 'Asociar devolución' : 'Completar devolución';
+            window.scrollTo({ top: 0 });
+            if (x.documento) revisarDocumento();
+        }
+
+        function cerrarPanel() {
+            if (fotosAso.total() && !confirm('Tienes fotos nuevas sin guardar. ¿Volver igual a la bandeja?')) return false;
+            st.aso.item = null;
+            fotosAso.reiniciar();
+            $('panelAsociar').hidden = true;
+            $('bandeja').hidden = false;
+            $('tituloPagina').textContent = TITULOS.devolucion;
+            return true;
+        }
+
+        function alCambiarCanal(canal) {
+            const esNV = canal === 'Nota de venta';
+            $('devBloqueVendedor').hidden = !esNV;
+            if (!esNV) st.aso.vendedor = null;
+            $('devLblDocumento').textContent = !canal ? 'N° documento'
+                : esNV ? 'N° Nota de venta'
+                : (canal === 'Otro' ? 'N° documento (si tiene)' : `N° de orden / venta ${canal}`);
+            $('devLblDocumento').classList.toggle('req', !!canal && canal !== 'Otro');
+            dibujarChips('devChipsVendedor', st.aso.vendedores, st.aso, 'vendedor', alCambiarVendedor);
+        }
+
+        function alCambiarVendedor(v) {
+            if (v !== 'Otro') return;
+            const nombre = (prompt('Nombre o sigla del vendedor') || '').trim();
+            st.aso.vendedor = nombre || null;
+            if (nombre && !st.aso.vendedores.includes(nombre)) st.aso.vendedores = st.aso.vendedores.slice(0, -1).concat([nombre, 'Otro']);
+            dibujarChips('devChipsVendedor', st.aso.vendedores, st.aso, 'vendedor', alCambiarVendedor);
+        }
+
+        function alCambiarResolucion(r) {
+            const conNumero = r === 'NOTA DE CRÉDITO' || r === 'CONSUMO';
+            $('devBloqueNumeroResol').hidden = !conNumero;
+            $('devLblNumeroResol').textContent = r === 'CONSUMO' ? 'N° de consumo' : 'N° de nota de crédito';
+            if (!conNumero) $('devNumeroResol').value = '';
+        }
+
+        function dibujarAsociacion() {
+            dibujarChips('devChipsCanal', CANALES, st.aso, 'canal', alCambiarCanal);
+            dibujarChips('devChipsMotivo', MOTIVOS, st.aso, 'motivo', null, true);
+            dibujarChips('devChipsResolucion', RESOLUCIONES, st.aso, 'resolucion', alCambiarResolucion);
+            alCambiarCanal(st.aso.canal);
+            alCambiarResolucion(st.aso.resolucion);
+            fotosAso.dibujar();
+        }
 
         let ultimoDocConsultado = '';
         async function revisarDocumento() {
             const doc = $('devDocumento').value.trim();
             const aviso = $('devAvisoDocumento');
-            if (!doc || doc === ultimoDocConsultado) return;
+            if (!doc || doc === ultimoDocConsultado || !st.aso.item) return;
             ultimoDocConsultado = doc;
             try {
-                const previas = await llamar('buscarDocumento', { documento: doc });
+                const previas = await llamar('buscarDocumento', { documento: doc, excluirId: st.aso.item.id });
                 if ($('devDocumento').value.trim() !== doc) return;
                 if (previas.length) {
                     aviso.innerHTML = `⚠️ Este documento ya tiene ${previas.length} devolución(es): ` +
                         previas.map(p => `${escapar(p.id)} (${escapar(p.fecha)}, ${escapar(p.resolucion)})`).join('; ') +
-                        '. Puedes registrar otra si corresponde.';
+                        '. Puedes asociar otra si corresponde.';
                     aviso.hidden = false;
                 } else {
                     aviso.hidden = true;
@@ -781,98 +1153,52 @@ function resetForm() {
             } catch (e) { aviso.hidden = true; }
         }
 
-        // ------------------------------------------------------------------
-        // Guardar
-        // ------------------------------------------------------------------
-
-        function validar() {
-            if (!st.canal) return 'Elige el canal de la venta';
-            if (st.canal === 'Nota de venta' && !st.vendedor) return 'Elige el vendedor';
-            if (st.canal !== 'Otro' && !$('devDocumento').value.trim()) return 'Falta el número de documento';
+        function validarAsociacion() {
+            const a = st.aso;
+            if (!a.canal) return 'Elige el canal de la venta';
+            if (a.canal === 'Nota de venta' && !a.vendedor) return 'Elige el vendedor';
+            if (a.canal !== 'Otro' && !$('devDocumento').value.trim()) return 'Falta el número de documento de la venta';
             if (!$('devProducto').value.trim()) return 'Falta el producto devuelto';
-            if (!st.estado) return 'Elige el estado del producto';
-            if (st.fotos.length === 0) return 'Agrega al menos una foto';
-            if (st.fotos.some(f => f.estado !== 'ok')) return 'Espera a que terminen de subir las fotos';
-            if (!$('devRecibidoPor').value.trim()) return 'Escribe quién recibe la devolución';
+            if (!fotosAso.todasListas()) return 'Espera a que terminen de subir las fotos';
+            if (!$('devAsociadoPor').value.trim()) return 'Escribe quién asocia';
             return null;
         }
 
-        async function guardar() {
-            if (st.guardando) return;
-            const error = validar();
+        async function guardarAsociacion() {
+            const a = st.aso;
+            if (a.guardando || !a.item) return;
+            const error = validarAsociacion();
             if (error) { toast(error, true); return; }
-
-            st.guardando = true;
-            actualizarEstado();
-            const recibidoPor = $('devRecibidoPor').value.trim();
-            guardarLocal('dev_recibidoPor', recibidoPor);
-
+            a.guardando = true;
+            actualizarBotonAso();
+            const asociadoPor = $('devAsociadoPor').value.trim();
+            guardarLocal('dev_asociadoPor', asociadoPor);
             const datos = {
-                id: st.id,
-                canal: st.canal,
+                id: a.item.id,
+                canal: a.canal,
                 documento: $('devDocumento').value.trim(),
-                vendedor: st.vendedor || '',
+                vendedor: a.vendedor || '',
                 cliente: $('devCliente').value.trim(),
                 producto: $('devProducto').value.trim(),
                 cantidad: Number($('devCantidad').value) || 1,
-                estado: st.estado,
-                motivo: st.motivo || '',
-                nota: $('devNota').value.trim(),
-                resolucion: st.resolucion,
+                motivo: a.motivo || '',
+                descripcion: $('devNota').value.trim(),
+                resolucion: a.resolucion,
                 numeroResolucion: $('devNumeroResol').value.trim(),
-                recibidoPor,
-                fotos: st.fotos.map(f => ({ fileId: f.fileId, url: f.url }))
+                asociadoPor,
+                fotos: fotosAso.datos()
             };
-
             try {
-                const r = await llamar('guardarDevolucion', { datos });
-                toast(r.yaExistia ? `${r.id} ya estaba guardada` : `✅ ${r.id} guardada`);
-                reiniciar();
-                cargarLista();
+                const r = await llamar('asociarDevolucion', { datos });
+                toast(`✅ ${r.id} guardada · ${r.gestion}`);
+                fotosAso.reiniciar();
+                cerrarPanel();
+                cargarBandeja();
             } catch (e) {
                 toast('No se pudo guardar: ' + e.message + '. Los datos siguen en pantalla, vuelve a tocar Guardar.', true);
             } finally {
-                st.guardando = false;
-                actualizarEstado();
-            }
-        }
-
-        function reiniciar() {
-            st.id = nuevoId();
-            st.canal = st.vendedor = st.estado = st.motivo = null;
-            st.resolucion = 'POR DEFINIR';
-            st.fotos = [];
-            ['devDocumento', 'devCliente', 'devProducto', 'devNota', 'devNumeroResol'].forEach(id => { $(id).value = ''; });
-            $('devCantidad').value = 1;
-            $('devAvisoDocumento').hidden = true;
-            ultimoDocConsultado = '';
-            $('devId').textContent = st.id;
-            dibujarTodo();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // ------------------------------------------------------------------
-        // Lista de últimas devoluciones
-        // ------------------------------------------------------------------
-
-        async function cargarLista() {
-            const cont = $('devLista');
-            try {
-                const items = await llamar('listarRecientes', { cantidad: 15 });
-                st.listaCargada = true;
-                if (!items.length) { cont.innerHTML = '<div class="dev-lista-item l2">Aún no hay devoluciones registradas.</div>'; return; }
-                cont.innerHTML = items.map(x => {
-                    const cerrada = x.gestion === 'CERRADA';
-                    const resol = x.resolucion + (x.numeroResolucion ? ` N° ${x.numeroResolucion}` : '');
-                    return `<div class="dev-lista-item">
-                        <div class="l1">${escapar(x.canal)} ${escapar(x.documento)}
-                            <span class="dev-etiqueta ${cerrada ? 'cerr' : 'pend'}">${escapar(x.gestion || 'PENDIENTE')}</span></div>
-                        <div class="l2">${escapar(x.id)} · ${escapar(x.fecha)} · ${escapar(x.estado)} · ${x.fotos} 📷</div>
-                        <div class="l2">${escapar(x.producto).slice(0, 90)} · ${escapar(resol)}</div>
-                    </div>`;
-                }).join('');
-            } catch (e) {
-                cont.innerHTML = `<div class="dev-lista-item l2">No se pudo cargar la lista: ${escapar(e.message)}</div>`;
+                a.guardando = false;
+                actualizarBotonAso();
             }
         }
 
@@ -880,39 +1206,43 @@ function resetForm() {
         // Inicio
         // ------------------------------------------------------------------
 
-        function dibujarTodo() {
-            dibujarChips('devChipsCanal', CANALES, 'canal', alCambiarCanal);
-            dibujarChips('devChipsEstado', ESTADOS, 'estado');
-            dibujarChips('devChipsMotivo', MOTIVOS, 'motivo');
-            dibujarChips('devChipsResolucion', RESOLUCIONES, 'resolucion', alCambiarResolucion);
-            $('devBloqueVendedor').hidden = true;
-            $('devLblDocumento').textContent = 'N° documento';
-            $('devLblDocumento').classList.remove('required');
-            alCambiarResolucion(st.resolucion);
-            dibujarGaleria();
-        }
+        if (soloBodega) document.body.classList.add('solo-bodega');
 
-        $('devId').textContent = st.id;
-        $('devRecibidoPor').value = leerLocal('dev_recibidoPor');
+        $('recId').textContent = st.rec.id;
+        $('recRecibidoPor').value = leerLocal('dev_recibidoPor');
+        $('recMenos').onclick = () => { $('recBultos').value = Math.max(1, (Number($('recBultos').value) || 1) - 1); };
+        $('recMas').onclick = () => { $('recBultos').value = (Number($('recBultos').value) || 0) + 1; };
+        $('recEtiqueta').addEventListener('input', vistaEtiqueta);
+        $('botonRec').onclick = guardarRecepcion;
+        $('recRecargar').onclick = cargarRecepciones;
+
         $('devMenos').onclick = () => { $('devCantidad').value = Math.max(1, (Number($('devCantidad').value) || 1) - 1); };
         $('devMas').onclick = () => { $('devCantidad').value = (Number($('devCantidad').value) || 0) + 1; };
-        $('devBotonCamara').onclick = () => $('devInputCamara').click();
-        $('devBotonGaleria').onclick = () => $('devInputGaleria').click();
-        $('devInputCamara').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
-        $('devInputGaleria').onchange = e => { agregarArchivos(e.target.files); e.target.value = ''; };
         $('devDocumento').addEventListener('blur', revisarDocumento);
-        $('botonDev').onclick = guardar;
-        $('devRecargar').onclick = cargarLista;
+        $('botonDev').onclick = guardarAsociacion;
+        $('devRecargar').onclick = cargarBandeja;
+        $('botonVolver').onclick = () => { if (cerrarPanel()) cargarBandeja(); };
+        $('botonIrRecepcion').onclick = () => cambiarModo('recepcion');
+
         $('botonModoPedido').onclick = () => cambiarModo('pedido');
         $('botonModoDev').onclick = () => cambiarModo('devolucion');
 
-        window.addEventListener('beforeunload', e => {
-            if (st.fotos.length || $('devProducto').value.trim()) { e.preventDefault(); e.returnValue = ''; }
+        window.addEventListener('hashchange', () => {
+            if (location.hash === '#recepcion') cambiarModo('recepcion');
+            else if (location.hash === '#devolucion') cambiarModo('devolucion');
         });
 
-        dibujarTodo();
-        // Abrir directo en modo devolución si el enlace termina en #devolucion
-        if (location.hash === '#devolucion') cambiarModo('devolucion');
+        window.addEventListener('beforeunload', e => {
+            if (fotosRec.total() || fotosAso.total()) { e.preventDefault(); e.returnValue = ''; }
+        });
+
+        dibujarRecepcion();
+        vistaEtiqueta();
+        actualizarBotonRec();
+        dibujarAsociacion();
+
+        if (location.hash === '#recepcion') cambiarModo('recepcion');
+        else if (location.hash === '#devolucion') cambiarModo('devolucion');
     })();
     </script>
 </body>
