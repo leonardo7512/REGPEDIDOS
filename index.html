@@ -410,8 +410,8 @@
         <div class="dev-modal-copiado" id="modalCodigoCopiado"></div>
         <button type="button" id="botonCopiarCodigo" class="btn btn-dev">📋 Copiar código</button>
         <div class="dev-modal-fila">
-            <button type="button" id="botonImprimirLocal" class="btn dev-btn-sec">🖨️ Imprimir etiqueta</button>
-            <button type="button" id="botonImprimirCorreo" class="btn dev-btn-sec">📧 A la impresora</button>
+            <button type="button" id="botonImprimirLocal" class="btn dev-btn-sec">🖨️ Imprimir</button>
+            <button type="button" id="botonGuardarPdf" class="btn dev-btn-sec">📄 Guardar PDF</button>
         </div>
         <button type="button" id="botonCopiarDetalle" class="btn dev-btn-sec">📋 Copiar con detalle (para enviar a bodega)</button>
         <button type="button" id="botonCerrarModal" class="btn dev-btn-listo">Listo</button>
@@ -1259,7 +1259,7 @@ function resetForm() {
             const admin = x.gestion === 'EN ADMINISTRACIÓN'
                 ? `<li><b>Administración:</b> falta el N° de ${x.resolucion === 'CONSUMO' ? 'consumo' : 'NC'} (se escribe en la hoja)</li>` : '';
             const codigo = x.codigo
-                ? `<div class="dev-codigo-linea">✍️ Código caja: <b>${escapar(x.codigo)}</b> <button type="button" class="clear-btn dev-btn-mini" data-copiar-codigo>📋 Copiar</button> <button type="button" class="clear-btn dev-btn-mini" data-imprimir>🖨️ Imprimir</button> <button type="button" class="clear-btn dev-btn-mini" data-enviar-impresora>📧 A la impresora</button></div>` : '';
+                ? `<div class="dev-codigo-linea">✍️ Código caja: <b>${escapar(x.codigo)}</b> <button type="button" class="clear-btn dev-btn-mini" data-copiar-codigo>📋 Copiar</button> <button type="button" class="clear-btn dev-btn-mini" data-imprimir>🖨️ Imprimir</button> <button type="button" class="clear-btn dev-btn-mini" data-guardar-pdf>📄 PDF</button></div>` : '';
             return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>${codigo}${alerta}
                 <ul>
                     <li><b>Fecha:</b> ${escapar(x.fecha)} ${etiquetaGestion(x.gestion, x.dias, x.revision)}</li>${admin}
@@ -1290,8 +1290,8 @@ function resetForm() {
             if (bc) bc.onclick = async () => toast(await copiar(x.codigo) ? `📋 ${x.codigo} copiado` : 'No se pudo copiar', false);
             const bi = $('fichaBodega').querySelector('[data-imprimir]');
             if (bi) bi.onclick = () => imprimirEnTelefono(x);
-            const be = $('fichaBodega').querySelector('[data-enviar-impresora]');
-            if (be) be.onclick = () => enviarAImpresora(x.id, x.codigo, be);
+            const bp = $('fichaBodega').querySelector('[data-guardar-pdf]');
+            if (bp) bp.onclick = () => guardarPdf(x.id, bp);
             $('devDocumento').value = x.documento || '';
             $('devCliente').value = x.cliente || '';
             $('devProducto').value = x.producto || '';
@@ -1482,7 +1482,9 @@ function resetForm() {
                 <script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>`;
         }
 
-        // Imprime desde el teléfono (AirPrint en iPhone, impresión de Android).
+        // Imprime en las impresoras conectadas al teléfono o computador
+        // (AirPrint en iPhone, impresión de Android / Mac / Linux). Desde esa misma
+        // ventana también se puede elegir "Guardar como PDF".
         function imprimirEnTelefono(x) {
             const w = window.open('', '_blank');
             if (!w) { toast('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes e intenta de nuevo.', true); return; }
@@ -1491,19 +1493,32 @@ function resetForm() {
             w.document.close();
         }
 
-        // Envía el PDF directo a la impresora (Email Print) desde el servidor.
-        async function enviarAImpresora(id, codigo, boton) {
+        // Guarda la etiqueta en PDF. La ventana se abre al tocar (si no, el iPhone la
+        // bloquea) y se llena cuando llega el PDF del servidor; desde ahí se comparte,
+        // se guarda en Archivos o se imprime.
+        async function guardarPdf(id, boton) {
             const textoAntes = boton ? boton.textContent : '';
-            if (boton) { boton.disabled = true; boton.textContent = '⏳ Enviando…'; }
+            const w = window.open('', '_blank');
+            if (w) w.document.write('<p style="font-family:Arial;padding:24px;font-size:18px">Generando PDF de la etiqueta…</p>');
+            if (boton) { boton.disabled = true; boton.textContent = '⏳ PDF…'; }
             try {
-                const r = await llamar('imprimirEtiqueta', { id });
-                toast(`🖨️ Etiqueta ${r.codigo} enviada a la impresora (${r.hojas} hoja${r.hojas === 1 ? '' : 's'})`);
-                if (boton) boton.textContent = '✅ Enviada';
+                const r = await llamar('pdfEtiqueta', { id });
+                const bytes = Uint8Array.from(atob(r.base64), c => c.charCodeAt(0));
+                const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+                if (w && !w.closed) {
+                    w.location.href = url;
+                } else {
+                    const a = document.createElement('a');
+                    a.href = url; a.download = r.nombre;
+                    document.body.appendChild(a); a.click(); a.remove();
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 120000);
+                toast(`📄 PDF de ${r.codigo} listo (${r.hojas} hoja${r.hojas === 1 ? '' : 's'})`);
             } catch (e) {
-                toast('No se pudo enviar a la impresora: ' + e.message, true);
-                if (boton) boton.textContent = textoAntes;
+                if (w && !w.closed) w.close();
+                toast('No se pudo generar el PDF: ' + e.message, true);
             } finally {
-                if (boton) boton.disabled = false;
+                if (boton) { boton.disabled = false; boton.textContent = textoAntes; }
             }
         }
 
@@ -1524,7 +1539,6 @@ function resetForm() {
                     revision: datos.resultadoRevision ? 'REALIZADA' : item.revision
                 })
             };
-            $('botonImprimirCorreo').textContent = '📧 A la impresora';
             $('modalCodigoTexto').textContent = codigo;
             $('modalCodigoDetalle').innerHTML = lineas.slice(1).map(escapar).join('<br>') + `<br><b>Estado:</b> ${escapar(gestion)}`;
             $('modalCodigoCopiado').textContent = '';
@@ -1541,7 +1555,7 @@ function resetForm() {
         };
         $('botonCerrarModal').onclick = () => { $('modalCodigo').hidden = true; };
         $('botonImprimirLocal').onclick = () => imprimirEnTelefono(codigoActual.info);
-        $('botonImprimirCorreo').onclick = () => enviarAImpresora(codigoActual.info.id, codigoActual.codigo, $('botonImprimirCorreo'));
+        $('botonGuardarPdf').onclick = () => guardarPdf(codigoActual.info.id, $('botonGuardarPdf'));
 
         // ------------------------------------------------------------------
         // Inicio
