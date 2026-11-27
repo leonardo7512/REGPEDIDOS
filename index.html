@@ -389,7 +389,7 @@
                     <div class="dev-chips" id="devChipsDestino"></div>
                 </div>
                 <div class="form-group full">
-                    <label>Resolución</label>
+                    <label>Resolución <small>(puedes elegir más de una)</small></label>
                     <div class="dev-chips" id="devChipsResolucion"></div>
                     <div class="dev-ayuda" id="devAyudaResolucion"></div>
                 </div>
@@ -674,8 +674,16 @@ function resetForm() {
             { v: 'POR DEFINIR', t: 'Por definir', c: '' },
             { v: 'NOTA DE CRÉDITO', t: 'Nota de crédito', c: 'verde' },
             { v: 'CONSUMO', t: 'Consumo', c: 'naranja' },
-            { v: 'CAMBIO DE PRODUCTO', t: 'Cambio de producto', c: 'verde' }
+            { v: 'CAMBIO DE PRODUCTO', t: 'Cambio de producto', c: 'verde' },
+            { v: 'NO APLICA', t: 'No aplica', c: '' }
         ];
+        // Se pueden elegir varias resoluciones; estas dos van solas.
+        const RES_SOLAS = ['POR DEFINIR', 'NO APLICA'];
+        const RES_CON_DOCUMENTO = ['NOTA DE CRÉDITO', 'CONSUMO'];
+        const listaDeResoluciones = v => {
+            const partes = (Array.isArray(v) ? v : String(v || '').split(/[,;+]/)).map(x => String(x).trim().toUpperCase()).filter(Boolean);
+            return RESOLUCIONES.map(r => r.v).filter(r => partes.includes(r));
+        };
         const DIGITOS_ETIQUETA = 6;
         const DIAS_ATRASO = 2;
         const LADO_MAX = 1280;          // suficiente para leer etiquetas; sube más rápido
@@ -690,7 +698,7 @@ function resetForm() {
         const st = {
             modo: 'pedido',
             rec: { id: nuevoId(), transportista: null, estado: null, guardando: false, transportistas: TRANSPORTISTAS.slice() },
-            aso: { item: null, canal: null, vendedor: null, motivo: null, destino: null, resolucion: 'POR DEFINIR', guardando: false, vendedores: VENDEDORES.slice() },
+            aso: { item: null, canal: null, vendedor: null, motivo: null, destino: null, resoluciones: ['POR DEFINIR'], guardando: false, vendedores: VENDEDORES.slice() },
             pendientes: []
         };
 
@@ -1204,7 +1212,7 @@ function resetForm() {
             } else {
                 let estadoTxt;
                 if (x.gestion === 'POR DEFINIR') estadoTxt = 'falta definir resolución';
-                else if (x.gestion === 'EN ADMINISTRACIÓN') estadoTxt = `${escapar(x.resolucion)} · administración debe poner el N°`;
+                else if (x.gestion === 'EN ADMINISTRACIÓN') estadoTxt = `${escapar(x.resolucion)} · falta ${escapar(x.faltaDocumento || 'N° de documento')}`;
                 else estadoTxt = `${escapar(x.resolucion)}${x.numeroResolucion ? ' N° ' + escapar(x.numeroResolucion) : ''}${x.fechaCierre ? ' · cerrada ' + escapar(x.fechaCierre.slice(0, 10)) : ''}`;
                 lineas = `<div class="l2">${escapar(x.canal)} ${escapar(x.documento)}${x.cliente ? ' · ' + escapar(x.cliente) : ''}</div>
                     <div class="l2">${escapar(x.producto).slice(0, 90)}${x.destino ? ' · ' + escapar(x.destino) : ''}</div>
@@ -1269,7 +1277,7 @@ function resetForm() {
             const alerta = x.revision === 'REQUERIDA'
                 ? '<div class="dev-alerta">⚠️ Bodega no pudo determinar si el producto está bien: requiere servicio técnico o revisión. Escribe el resultado más abajo cuando se revise.</div>' : '';
             const admin = x.gestion === 'EN ADMINISTRACIÓN'
-                ? `<li><b>Administración:</b> falta el N° de ${x.resolucion === 'CONSUMO' ? 'consumo' : 'NC'} (se escribe en la hoja)</li>` : '';
+                ? `<li><b>Administración:</b> falta ${escapar(x.faltaDocumento || 'el N° del documento')} (se escribe en la hoja)</li>` : '';
             const codigo = x.codigo
                 ? `<div class="dev-codigo-linea">✍️ Código caja: <b>${escapar(x.codigo)}</b> <button type="button" class="clear-btn dev-btn-mini" data-copiar-codigo>📋 Copiar</button> <button type="button" class="clear-btn dev-btn-mini" data-imprimir>🖨️ Imprimir</button> <button type="button" class="clear-btn dev-btn-mini" data-guardar-pdf>📄 PDF</button></div>` : '';
             return `<h3>📥 Recepción de bodega · ${escapar(x.id)}</h3>${codigo}${alerta}
@@ -1295,7 +1303,8 @@ function resetForm() {
             a.vendedor = x.vendedor || null;
             a.motivo = x.motivo || null;
             a.destino = x.destino || null;
-            a.resolucion = x.resolucion || 'POR DEFINIR';
+            a.resoluciones = listaDeResoluciones(x.resoluciones || x.resolucion);
+            if (!a.resoluciones.length) a.resoluciones = ['POR DEFINIR'];
             a.vendedores = x.vendedor && !VENDEDORES.includes(x.vendedor) ? VENDEDORES.slice(0, -1).concat([x.vendedor, 'Otro']) : VENDEDORES.slice();
             a.canales = x.canal && !CANALES.includes(x.canal) ? CANALES.slice(0, -1).concat([x.canal, 'Otro']) : CANALES.slice();
             $('fichaBodega').innerHTML = fichaBodega(x);
@@ -1367,24 +1376,52 @@ function resetForm() {
             dibujarChips('devChipsVendedor', st.aso.vendedores, st.aso, 'vendedor', alCambiarVendedor);
         }
 
-        function alCambiarResolucion(r) {
-            const ayuda = {
-                'POR DEFINIR': 'Queda en "Falta definir resolución" hasta que se decida.',
-                'NOTA DE CRÉDITO': 'Pasa a administración (fase 3): el N° de la NC se escribe en la hoja.',
-                'CONSUMO': 'Pasa a administración (fase 3): el N° del consumo se escribe en la hoja.',
-                'CAMBIO DE PRODUCTO': 'Queda cerrada al guardar.'
-            }[r] || '';
+        // Chips de varias opciones: "Por definir" y "No aplica" van solas; las demás se combinan.
+        function dibujarChipsResolucion() {
+            const cont = $('devChipsResolucion');
+            cont.innerHTML = '';
+            RESOLUCIONES.forEach(o => {
+                const sel = st.aso.resoluciones.includes(o.v);
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'dev-chip' + (sel ? ' sel ' + (o.c || '') : '');
+                b.textContent = (sel && !RES_SOLAS.includes(o.v) ? '✓ ' : '') + o.t;
+                b.onclick = () => {
+                    let lista = st.aso.resoluciones.slice();
+                    if (RES_SOLAS.includes(o.v)) lista = [o.v];
+                    else {
+                        lista = lista.filter(r => !RES_SOLAS.includes(r));
+                        lista = lista.includes(o.v) ? lista.filter(r => r !== o.v) : lista.concat([o.v]);
+                        if (!lista.length) lista = ['POR DEFINIR'];
+                    }
+                    st.aso.resoluciones = RESOLUCIONES.map(r => r.v).filter(r => lista.includes(r));
+                    dibujarChipsResolucion();
+                    alCambiarResolucion();
+                };
+                cont.appendChild(b);
+            });
+        }
+
+        function alCambiarResolucion() {
+            const lista = st.aso.resoluciones;
+            const docs = lista.filter(r => RES_CON_DOCUMENTO.includes(r)).map(r => r === 'CONSUMO' ? 'del consumo' : 'de la NC');
+            let ayuda;
+            if (lista[0] === 'POR DEFINIR') ayuda = 'Queda en "Falta definir resolución" hasta que se decida.';
+            else if (lista[0] === 'NO APLICA') ayuda = 'No requiere documento: queda cerrada al guardar.';
+            else if (docs.length) ayuda = `Pasa a administración (fase 3): en la hoja se escribe el N° ${docs.join(' y el N° ')}${docs.length > 1 ? ' (separados por coma)' : ''}.`;
+            else ayuda = 'Queda cerrada al guardar.';
             const numero = st.aso.item && st.aso.item.numeroResolucion;
-            $('devAyudaResolucion').textContent = ayuda + (numero && (r === 'NOTA DE CRÉDITO' || r === 'CONSUMO') ? ` Administración ya puso el N° ${numero}.` : '');
+            $('devAyudaResolucion').textContent = ayuda + (numero && docs.length ? ` Administración ya puso: ${numero}.` : '') +
+                (lista.length > 1 ? ' Puedes elegir más de una.' : '');
         }
 
         function dibujarAsociacion() {
             dibujarChips('devChipsCanal', st.aso.canales || CANALES, st.aso, 'canal', alCambiarCanalChip);
             dibujarChips('devChipsMotivo', MOTIVOS, st.aso, 'motivo', null, true);
             dibujarChips('devChipsDestino', DESTINOS, st.aso, 'destino', null, true);
-            dibujarChips('devChipsResolucion', RESOLUCIONES, st.aso, 'resolucion', alCambiarResolucion);
+            dibujarChipsResolucion();
             alCambiarCanal(st.aso.canal);
-            alCambiarResolucion(st.aso.resolucion);
+            alCambiarResolucion();
             fotosAso.dibujar();
         }
 
@@ -1440,7 +1477,8 @@ function resetForm() {
                 descripcion: $('devNota').value.trim(),
                 destino: a.destino || '',
                 resultadoRevision: $('devResultadoRevision').value.trim(),
-                resolucion: a.resolucion,
+                resoluciones: a.resoluciones.slice(),
+                resolucion: a.resoluciones.join(', '),
                 asociadoPor,
                 fotos: fotosAso.datos()
             };
